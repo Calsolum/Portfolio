@@ -60,9 +60,12 @@ variables — `next build` is the whole story. Pushes to the production branch
 (`portfolio`, also the repo default) deploy automatically; other branches get preview
 deployments.
 
+Live at [tariqsingh.ca](https://tariqsingh.ca).
+
 `metadataBase` in `src/app/layout.tsx` reads Vercel's injected `VERCEL_PROJECT_PRODUCTION_URL`
 / `VERCEL_URL`, so Open Graph and canonical URLs stay absolute and correct on production,
-previews, and any custom domain added later. Locally it falls back to `http://localhost:3000`.
+previews, and the custom domain — no code change needed when the domain changed. Locally it
+falls back to `http://localhost:3000`.
 
 ## Notes
 
