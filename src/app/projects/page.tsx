@@ -63,6 +63,17 @@ export default function Page() {
                       Launch app →
                     </a>
                   ) : null}
+                  {project.links?.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="font-mono text-xs uppercase tracking-[0.15em] text-muted transition-colors hover:text-accent"
+                    >
+                      {link.label} →
+                    </a>
+                  ))}
                 </div>
               </article>
             </Reveal>

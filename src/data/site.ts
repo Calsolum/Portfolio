@@ -220,6 +220,8 @@ export const projects: Project[] = [
       "A fully self-hosted smart kitchen management system built on a Raspberry Pi 5 — no subscriptions, no cloud dependency. Custom touchscreen dashboard, on-device voice control, live grocery deal matching, and smart home automation. Fridge-mounted, running entirely on a private home network.",
     stack: "Docker · Flask · Grocy · Mealie · faster-whisper · Home Assistant · Tailscale",
     tags: ["Docker", "Flask", "Home Assistant", "Raspberry Pi"],
+    // Runs on a private home network, so the source is the only thing to link to.
+    links: [{ label: "View source on GitHub", href: "https://github.com/Calsolum/kitchen-hub" }],
     readable: true,
   },
   {
