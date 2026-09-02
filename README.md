@@ -57,8 +57,8 @@ public/downloads/   script PDFs and the resume
 
 Hosted on Vercel, which detects Next.js and needs no build configuration or environment
 variables — `next build` is the whole story. Pushes to the production branch
-(`claude/portfolio-website-dwyq94`, currently also the repo default) deploy automatically;
-other branches get preview deployments.
+(`portfolio`, also the repo default) deploy automatically; other branches get preview
+deployments.
 
 `metadataBase` in `src/app/layout.tsx` reads Vercel's injected `VERCEL_PROJECT_PRODUCTION_URL`
 / `VERCEL_URL`, so Open Graph and canonical URLs stay absolute and correct on production,
