@@ -38,7 +38,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       body={body}
       backHref="/projects"
       backLabel="Technical Projects"
-      links={project.app ? [{ label: "Launch app", href: project.app }] : undefined}
+      links={[
+        ...(project.app ? [{ label: "Launch app", href: project.app }] : []),
+        ...(project.links ?? []),
+      ]}
     />
   );
 }
