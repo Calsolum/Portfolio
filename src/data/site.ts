@@ -55,7 +55,7 @@ export const profile = {
   tagline: "Words in every medium",
   intro:
     "From interactive fiction to poetry, novel to stage — a body of work that refuses to stay in one genre.",
-  email: "tariq@live.ca",
+  email: "tariq@tariqsingh.ca",
   // Phone number and street address from the resume are deliberately not published here.
   links: {
     itch: "https://ns-kt.itch.io",
