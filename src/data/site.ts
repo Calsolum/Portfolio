@@ -116,7 +116,7 @@ export const sections: Section[] = [
     title: "Technical",
     titleLine2: "Projects",
     intro:
-      "Three projects built from scratch — a self-hosted smart home system, a digital party game, and a board game companion app.",
+      "Five projects built from scratch — a self-hosted smart home system, a digital party game, a board game companion app, a Raspberry Pi game assistant, and a team planner for Fate/Grand Order.",
   },
 ];
 
@@ -282,6 +282,18 @@ export const projects: Project[] = [
     },
     readable: true,
   },
+  {
+    slug: "fgo-team-builder",
+    title: "FGO Team Builder",
+    category: "projects",
+    kind: "Web App · Game Planner",
+    blurb:
+      "A planner for Fate/Grand Order farming. Enter the servants and craft essences you own, pick a quest, and it searches for teams, CEs and skill orders that clear every wave with one NP each, in the fewest skill taps. Damage is checked at the lowest random roll, so every plan it lists works on any roll.",
+    stack: "Next.js · TypeScript · Web Workers · Atlas Academy API",
+    tags: ["TypeScript", "Optimisation", "Web Workers"],
+    app: "/fgo",
+    readable: true,
+  },
 ];
 
 export const stats = [
@@ -291,7 +303,7 @@ export const stats = [
   { value: "1", label: "Novella" },
   { value: "1", label: "Stage Adaptation" },
   { value: "1", label: "Film Script" },
-  { value: "4", label: "Projects" },
+  { value: "5", label: "Projects" },
 ];
 
 export interface ExperienceEntry {
