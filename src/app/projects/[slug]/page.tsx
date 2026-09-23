@@ -42,6 +42,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         ...(project.app ? [{ label: "Launch app", href: project.app }] : []),
         ...(project.links ?? []),
       ]}
+      image={project.image}
     />
   );
 }

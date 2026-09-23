@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { Container } from "@/components/ui/Container";
@@ -12,6 +13,7 @@ export function ReadingLayout({
   backHref,
   backLabel,
   links,
+  image,
 }: {
   kind: string;
   title: string;
@@ -20,6 +22,7 @@ export function ReadingLayout({
   backHref: string;
   backLabel: string;
   links?: ExternalLink[];
+  image?: { src: string; alt: string; width: number; height: number };
 }) {
   return (
     <article className="py-16 md:py-24">
@@ -36,6 +39,20 @@ export function ReadingLayout({
           <h1 className="mt-4 max-w-3xl font-serif text-4xl leading-[1.05] text-ink sm:text-5xl md:text-6xl">
             {title}
           </h1>
+
+          {image ? (
+            <figure className="mt-10 border border-edge bg-card p-2 md:p-3">
+              <Image
+                src={image.src}
+                alt={image.alt}
+                width={image.width}
+                height={image.height}
+                sizes="(max-width: 768px) 100vw, 1152px"
+                className="h-auto w-full"
+                priority
+              />
+            </figure>
+          ) : null}
 
           {intro ? (
             <div
@@ -62,10 +79,12 @@ export function ReadingLayout({
           ) : null}
         </header>
 
-        <div
-          className="prose-reading mt-14 max-w-[68ch]"
-          dangerouslySetInnerHTML={{ __html: body }}
-        />
+        {body ? (
+          <div
+            className="prose-reading mt-14 max-w-[68ch]"
+            dangerouslySetInnerHTML={{ __html: body }}
+          />
+        ) : null}
 
         <div className="mt-20 max-w-[68ch] border-t border-edge pt-10">
           <Link

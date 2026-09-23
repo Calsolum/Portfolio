@@ -36,6 +36,8 @@ export interface Project extends Work {
   stack: string;
   /** Path under /public/apps for projects that are playable in the browser. */
   app?: string;
+  /** Screenshot shown above the write-up, for projects that have one worth seeing. */
+  image?: { src: string; alt: string; width: number; height: number };
 }
 
 export interface Section {
@@ -222,6 +224,14 @@ export const projects: Project[] = [
     tags: ["Docker", "Flask", "Home Assistant", "Raspberry Pi"],
     // Runs on a private home network, so the source is the only thing to link to.
     links: [{ label: "View source on GitHub", href: "https://github.com/Calsolum/kitchen-hub" }],
+    // Captured with the dashboard's demo mode on, so the camera tiles show
+    // placeholders rather than real footage from the house.
+    image: {
+      src: "/images/kitchen-hub.png",
+      alt: "The Kitchen Hub dashboard: stock status, shopping list, meal plan, Flipp deals, and a live view panel with the camera feeds hidden.",
+      width: 1904,
+      height: 898,
+    },
     readable: true,
   },
   {
