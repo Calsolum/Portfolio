@@ -2,7 +2,7 @@
 
 Personal portfolio site for Tariq Singh: interactive fiction, novels, poetry, stage and
 screen scripts, and self-built technical projects. Most works are readable in full on the
-site, and two of the projects are playable in the browser.
+site, two of the projects are playable in the browser, and the FGO Team Builder runs at `/fgo`.
 
 Built with Next.js (App Router), TypeScript and Tailwind CSS v4. Every route is statically
 prerendered.
@@ -20,6 +20,7 @@ Other scripts:
 npm run build    # production build (also type-checks)
 npm run start    # serve the production build
 npm run lint     # eslint
+npm test         # vitest (FGO Team Builder engine)
 ```
 
 ## Editing the site
@@ -48,6 +49,7 @@ src/app/            routes — home, /about, and a category + [slug] pair per se
 src/components/     layout (Nav, Footer), home (Hero, Stats), works, ui
 src/content/        full text of each work, as HTML fragments
 src/data/site.ts    all copy, metadata and links
+src/fgo/            FGO Team Builder: atlas/ (API client + cache), engine/ (battle sim + search), state/, ui/
 src/lib/content.ts  content loaders
 public/apps/        self-contained playable builds (DrunkQuest, Tragedy Looper)
 public/downloads/   script PDFs and the resume

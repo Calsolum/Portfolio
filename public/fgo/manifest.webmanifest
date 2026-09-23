@@ -1,0 +1,15 @@
+{
+  "name": "FGO Team Builder",
+  "short_name": "FGO Teams",
+  "description": "Finds Fate/Grand Order loadouts that clear every wave with one NP each, from your own servants and craft essences.",
+  "start_url": "/fgo",
+  "scope": "/fgo",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/fgo/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/fgo/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/fgo/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
