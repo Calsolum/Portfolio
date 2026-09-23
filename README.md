@@ -60,7 +60,9 @@ variables — `next build` is the whole story. Pushes to the production branch
 (`portfolio`, also the repo default) deploy automatically; other branches get preview
 deployments.
 
-Live at [tariqsingh.ca](https://tariqsingh.ca).
+Live at [tariqsingh.ca](https://tariqsingh.ca). The apex is the canonical domain and
+`www.tariqsingh.ca` 308-redirects to it, so `VERCEL_PROJECT_PRODUCTION_URL` — and therefore
+every Open Graph and canonical URL — resolves to the bare domain.
 
 `metadataBase` in `src/app/layout.tsx` reads Vercel's injected `VERCEL_PROJECT_PRODUCTION_URL`
 / `VERCEL_URL`, so Open Graph and canonical URLs stay absolute and correct on production,
