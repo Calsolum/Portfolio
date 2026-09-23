@@ -1,0 +1,22 @@
+<p><em>Web App · Game Planner</em></p>
+
+<p>Farming in Fate/Grand Order comes down to one question: which servants, craft essences and skills let one Noble Phantasm wipe each wave, three turns in a row? After years of play there are too many servants and CEs to work that out by hand.</p>
+
+<hr />
+
+<p>You enter your roster once: each servant's level, NP level, skill and append levels, the CEs you own and whether they are max limit broken, the friend supports you can usually borrow, and your mystic codes. Then you pick a quest. Enemy HP, classes and traits come straight from the Atlas Academy game database.</p>
+
+<h2>How it searches</h2>
+
+<p>The planner reads every skill, NP and CE effect from the game data and simulates the fight turn by turn: buff durations, cooldowns, NP gauge, overcharge, and the NP gauge refunded per hit, including the overkill bonus. Damage uses the game's formula at the lowest random roll, so any plan it lists works on every roll.</p>
+
+<ul>
+<li>It first ranks attackers by how well their NPs hit the quest's enemies, and supports by what their skills give other servants.</li>
+<li>For each team shape (one looping attacker, or two or three attackers splitting the waves) it picks the CEs that close the NP gauge gap.</li>
+<li>A best-case check skips any team that can't clear a wave even with every skill used. The rest go through a branch-and-bound search over which skill to use on which turn, trying the fewest taps first.</li>
+<li>The work is split across Web Workers, so the page stays responsive while results stream in.</li>
+</ul>
+
+<p>Plans are ranked by fewest turns, then fewest skill taps, then the widest damage margin. When nothing works, it shows the teams that came closest and why each fell short.</p>
+
+<p><strong>Tech stack:</strong> Next.js · TypeScript · Web Workers · IndexedDB · Atlas Academy API · Vitest</p>
