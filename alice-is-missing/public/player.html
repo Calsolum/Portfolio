@@ -288,7 +288,9 @@ setInterval(renderNow, 1000); // the "in 4:12" countdown
 function avatar(thread) {
   if (thread === "group") return `<span class="avatar group">∗</span>`;
   const name = chat.threadName(thread, mySeat());
-  return `<span class="avatar ${thread.startsWith("npc:") ? "npc" : ""}">${esc(name.slice(0, 1).toUpperCase())}</span>`;
+  // "The Ex" and "The Newcomer" shouldn't both be "T".
+  const initial = (name.replace(/^(the|a|an)\s+/i, "") || name).slice(0, 1).toUpperCase();
+  return `<span class="avatar ${thread.startsWith("npc:") ? "npc" : ""}">${esc(initial)}</span>`;
 }
 
 function preview(thread) {
