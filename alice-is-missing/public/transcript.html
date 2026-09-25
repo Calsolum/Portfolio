@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Transcript · Alice is Missing</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/app.css">
+<style>
+  .thread-block { margin-bottom: 28px; break-inside: avoid-page; }
+  .thread-block h2 { margin-top: 8px; }
+  .line { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: 10px; padding: 5px 0; }
+  .line time { font: .78rem/1.9 var(--mono); color: var(--text3); }
+  .line .who { font-weight: 600; margin-right: 6px; }
+  .line.npc .who { color: #b7a3d6; }
+  .line .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .views { margin-top: 16px; }
+  @media print {
+    :root { --bg: #fff; --text: #111; --text2: #333; --text3: #666; --line: #ccc; }
+    .noprint, #conn { display: none !important; }
+    .line.npc .who { color: #5a3d8a; }
+  }
+</style>
+</head>
+<body>
+<div id="conn" hidden>Reconnecting to the game…</div>
+<main class="wrap">
+  <h1>Transcript</h1>
+  <p class="sub" id="lead">Every message, in order, with the time left on the clock.</p>
+  <div class="row views noprint">
+    <button class="small" data-view="threads" aria-pressed="true">By conversation</button>
+    <button class="small" data-view="timeline" aria-pressed="false">One timeline</button>
+    <button class="small" onclick="print()">Print</button>
+    <button class="small" id="download">Download JSON</button>
+  </div>
+  <div id="out" style="margin-top:20px"></div>
+</main>
+<script src="/vendor/qrcode.js"></script>
+<script src="/client.js"></script>
+<script>
+const { esc, chat } = Alice;
+let view = "threads";
+
+function line(m, showThread) {
+  const where = showThread ? ` <span class="hint">in ${esc(chat.threadName(m.thread, null))}</span>` : "";
+  return `<div class="line ${m.from.npc ? "npc" : ""}">
+    <time>${chat.timeLabel(m)}</time>
+    <div><span class="who">${esc(chat.senderName(m))}</span>${where}<div class="text">${esc(m.text)}</div></div>
+  </div>`;
+}
+
+function render() {
+  const s = Alice.state;
+  if (!s) return;
+  $lead.textContent = s.phase === "ended"
+    ? "Every message from the game, with the time left on the clock when it was sent."
+    : "The game is still going, so this shows only the conversations you're in. Everything unlocks when time runs out.";
+  const msgs = chat.messages;
+  if (!msgs.length) {
+    $out.innerHTML = `<p class="empty-thread">No messages yet.</p>`;
+    return;
+  }
+  if (view === "timeline") {
+    $out.innerHTML = msgs.map((m) => line(m, true)).join("");
+    return;
+  }
+  const order = [];
+  for (const m of msgs) if (!order.includes(m.thread)) order.push(m.thread);
+  $out.innerHTML = order
+    .map((t) => `<section class="thread-block"><h2>${esc(chat.threadName(t, null))}</h2>${chat.inThread(t).map((m) => line(m, false)).join("")}</section>`)
+    .join("");
+}
+
+const $lead = document.getElementById("lead");
+const $out = document.getElementById("out");
+
+document.querySelector(".views").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-view]");
+  if (!b) return;
+  view = b.dataset.view;
+  for (const x of document.querySelectorAll("[data-view]")) x.setAttribute("aria-pressed", String(x === b));
+  render();
+});
+
+document.getElementById("download").onclick = () => {
+  const s = Alice.state;
+  const data = {
+    exportedAt: new Date().toISOString(),
+    seats: s.seats.map(({ id, name, character }) => ({ id, name, character })),
+    messages: chat.messages.map((m) => ({
+      ...m,
+      threadName: chat.threadName(m.thread, null),
+      sender: chat.senderName(m),
+      clock: chat.timeLabel(m),
+    })),
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: "alice-is-missing-transcript.json" });
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Identify as the facilitator if this device has been one, else as whatever seat it holds.
+const role = Alice.store.get("alice.pin") || !Alice.store.get("alice.token") ? "facilitator" : "player";
+chat.enable(role, render, null);
+Alice.connect("transcript", render);
+</script>
+</body>
+</html>

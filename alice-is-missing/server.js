@@ -8,6 +8,7 @@ import path from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { createChat, ChatError } from "./chat.js";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(ROOT, "public");
@@ -60,14 +61,36 @@ function loadState() {
 let state = loadState();
 let saveTimer = null;
 
+const chat = createChat({
+  file: path.join(DATA_DIR, "messages.json"),
+  seatCount: () => state.seatCount,
+  gameMs: () => elapsedMs(),
+  ended: () => state.phase === "ended",
+});
+
+function writeState() {
+  saveTimer = null;
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const tmp = STATE_FILE + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
+  fs.renameSync(tmp, STATE_FILE);
+}
+
 function save() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    const tmp = STATE_FILE + ".tmp";
-    fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
-    fs.renameSync(tmp, STATE_FILE);
-  }, 200);
+  saveTimer = setTimeout(writeState, 200);
+}
+
+// Saves are debounced; don't lose the last moves or messages when systemd stops us.
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      writeState();
+    }
+    chat.flush();
+    process.exit(0);
+  });
 }
 
 // ---------------------------------------------------------------- clock
@@ -150,7 +173,11 @@ function view(client) {
     },
     checklist: state.checklist,
   };
-  if (client.role === "facilitator" && client.authed) v.secret = state.secret;
+  v.chatEpoch = chat.epoch;
+  if (client.role === "facilitator" && client.authed) {
+    v.secret = state.secret;
+    v.npcs = chat.npcs();
+  }
   if (client.seat) v.mySeat = client.seat;
   return v;
 }
@@ -166,6 +193,16 @@ function send(client) {
 function commit() {
   save();
   for (const c of clients) send(c);
+}
+
+const viewerOf = (client) => ({ seat: client.seat, facilitator: client.role === "facilitator" && client.authed });
+
+// Chat events go only to the devices allowed to read that thread.
+function pushChat(event, payload, thread, exceptSeat) {
+  for (const c of clients) {
+    if (c.seat != null && c.seat === exceptSeat) continue;
+    if (chat.canSee(viewerOf(c), thread)) c.res.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`);
+  }
 }
 
 setInterval(tick, 250);
@@ -187,6 +224,7 @@ class HttpError extends Error {
 
 const facilitatorOnly = new Set([
   "setup", "secret", "release", "start", "pause", "resume", "adjust", "resetClock", "newGame", "check",
+  "npcAdd", "npcRemove", "clearMessages",
 ]);
 
 function act(body) {
@@ -194,6 +232,30 @@ function act(body) {
   if (facilitatorOnly.has(type) && PIN && body.pin !== PIN) throw new HttpError(403, "Wrong facilitator PIN");
 
   switch (type) {
+    case "send":
+    case "typing": {
+      const viewer = {
+        seat: seatByToken(body.token)?.id ?? null,
+        facilitator: body.npc != null && (!PIN || body.pin === PIN),
+      };
+      if (type === "typing") {
+        const from = chat.sender(viewer, body.thread, body.npc);
+        pushChat("typing", { thread: body.thread, from }, body.thread, from.seat);
+        return { ok: true };
+      }
+      const msg = chat.send(viewer, body.thread, body.text, body.npc);
+      pushChat("message", msg, msg.thread);
+      return { ok: true, id: msg.id };
+    }
+    case "npcAdd":
+      chat.addNpc(body.name);
+      break;
+    case "npcRemove":
+      chat.removeNpc(body.id);
+      break;
+    case "clearMessages":
+      chat.clear();
+      break;
     case "claim": {
       const seat = state.seats.find((s) => s.id === Number(body.seat));
       if (!seat || seat.id > state.seatCount) throw new HttpError(404, "No such seat");
@@ -298,6 +360,7 @@ function act(body) {
       break;
     case "newGame":
       state = freshState();
+      chat.clear();
       for (const c of clients) c.seat = null;
       break;
     case "whoami": {
@@ -340,6 +403,7 @@ const PAGES = {
   "/facilitator": "facilitator.html",
   "/player": "player.html",
   "/qr": "qr.html",
+  "/transcript": "transcript.html",
 };
 
 function serveFile(req, res, file) {
@@ -436,12 +500,23 @@ async function handle(req, res) {
     return;
   }
 
+  if (p === "/api/messages") {
+    const q = url.searchParams;
+    const viewer = {
+      seat: seatByToken(q.get("token"))?.id ?? null,
+      facilitator: q.get("role") === "facilitator" && (!PIN || q.get("pin") === PIN),
+    };
+    const body = { epoch: chat.epoch, messages: chat.visibleTo(viewer) };
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" }).end(JSON.stringify(body));
+    return;
+  }
+
   if (p === "/api/action" && req.method === "POST") {
     try {
       const result = act(await readBody(req));
       res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(result));
     } catch (err) {
-      const status = err instanceof HttpError ? err.status : 500;
+      const status = err instanceof HttpError || err instanceof ChatError ? err.status : 500;
       if (status === 500) console.error(err);
       res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify({ error: err.message }));
     }

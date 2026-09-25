@@ -8,6 +8,8 @@
 
 <p>A shared table screen shows the countdown, plays the soundtrack, and marks each clue as its minute arrives. Players join from their own phones by scanning a QR code or tapping an NFC tag at their seat. When a player's clue comes due, their phone vibrates and the screen turns red. Nobody else is alerted. The facilitator's screen handles seats, characters, who holds which clue, and the private Suspect and Location draws.</p>
 
+<p>It also carries the game's texting. The Pi runs a small messenger, so nobody swaps real phone numbers or mixes in-game texts with real ones. Each player texts as their character, in the group chat or privately. The facilitator can send messages from an unknown number and read the players' replies, but never their private chats with each other. When time runs out, every conversation opens up, and the group can read the whole transcript together.</p>
+
 <p>Every device follows one clock on the server. Each phone advances time from the last update it received, so every screen shows the same second even when the devices' own clocks disagree. The soundtrack seeks itself back into place after a pause, a reload, or a dropped connection. The game state is saved to disk, so if the Pi reboots mid-game, play resumes where it stopped.</p>
 
 <p>It is one Node process with no dependencies and no build step, small enough to run on a Pi Zero 2 W. It holds none of the game's card text, only the structure of the session. You still need your own copy of the game.</p>

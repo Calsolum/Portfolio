@@ -36,12 +36,152 @@ const Alice = {
       Alice.state = JSON.parse(e.data);
       Alice.receivedAt = performance.now();
       if (status) status.hidden = true;
+      const chat = Alice.chat;
+      // Refetch when messages were cleared, or when the game ending unlocks every thread.
+      if (chat.role && (Alice.state.chatEpoch !== chat.epoch || (Alice.state.phase === "ended") !== chat.endedAtLoad)) {
+        chat.load();
+      }
       onState(Alice.state);
     });
+    es.addEventListener("message", (e) => Alice.chat.add(JSON.parse(e.data)));
+    es.addEventListener("typing", (e) => Alice.chat.onTyping?.(JSON.parse(e.data)));
+    // After any reconnect (a phone waking up), catch up on what was missed.
+    es.addEventListener("open", () => Alice.chat.role && Alice.chat.load());
     es.onerror = () => {
       if (status) status.hidden = false;
     };
     return es;
+  },
+
+  chat: {
+    role: null,
+    epoch: null,
+    endedAtLoad: false,
+    messages: [],
+    onChange: null,
+    onTyping: null,
+    loading: null,
+
+    // Pages that show messages call this once; everything else stays chat-free.
+    enable(role, onChange, onTyping) {
+      Object.assign(Alice.chat, { role, onChange, onTyping });
+      return Alice.chat.load();
+    },
+
+    load() {
+      const chat = Alice.chat;
+      if (chat.loading) return chat.loading;
+      const q = new URLSearchParams({ role: chat.role });
+      for (const [k, key] of [["token", "alice.token"], ["pin", "alice.pin"]]) {
+        const v = store.get(key);
+        if (v) q.set(k, v);
+      }
+      chat.loading = fetch(`/api/messages?${q}`)
+        .then((r) => r.json())
+        .then((body) => {
+          chat.epoch = body.epoch;
+          chat.messages = body.messages;
+          chat.endedAtLoad = Alice.state?.phase === "ended";
+          chat.onChange?.(null);
+        })
+        .catch(() => {})
+        .finally(() => {
+          chat.loading = null;
+        });
+      return chat.loading;
+    },
+
+    add(msg) {
+      const chat = Alice.chat;
+      if (chat.messages.some((m) => m.id === msg.id)) return;
+      chat.messages.push(msg);
+      chat.onChange?.(msg);
+    },
+
+    inThread(thread) {
+      return Alice.chat.messages.filter((m) => m.thread === thread);
+    },
+
+    // Read marks are per device and per message set (the epoch changes when messages are cleared).
+    readMarks() {
+      try {
+        return JSON.parse(store.get(`alice.read.${Alice.chat.epoch}`) || "{}");
+      } catch {
+        return {};
+      }
+    },
+
+    markRead(thread) {
+      const last = Alice.chat.inThread(thread).at(-1);
+      if (!last) return;
+      const marks = Alice.chat.readMarks();
+      if ((marks[thread] ?? 0) >= last.id) return;
+      marks[thread] = last.id;
+      store.set(`alice.read.${Alice.chat.epoch}`, JSON.stringify(marks));
+    },
+
+    // Unread messages in a thread that someone else sent. `me` is { seat } or { npc }.
+    unread(thread, me = {}) {
+      const seen = Alice.chat.readMarks()[thread] ?? 0;
+      return Alice.chat.inThread(thread).filter((m) => m.id > seen && !Alice.chat.isFrom(m, me)).length;
+    },
+
+    isFrom(msg, me) {
+      return (me.seat != null && msg.from.seat === me.seat) || (me.npc != null && msg.from.npc === me.npc);
+    },
+
+    dmKey(a, b) {
+      return `dm:${Math.min(a, b)}-${Math.max(a, b)}`;
+    },
+
+    npcName(id) {
+      const live = Alice.state?.npcs?.find((n) => n.id === id);
+      if (live) return live.name;
+      const sent = Alice.chat.messages.find((m) => m.from.npc === id);
+      return sent ? sent.from.name : "Unknown number";
+    },
+
+    senderName(msg) {
+      return msg.from.seat ? Alice.seatLabel(msg.from.seat) : msg.from.name;
+    },
+
+    // A thread's title from one seat's point of view (mySeat may be null).
+    threadName(thread, mySeat) {
+      if (thread === "group") return "Group chat";
+      let m = /^dm:(\d+)-(\d+)$/.exec(thread);
+      if (m) {
+        const [a, b] = [Number(m[1]), Number(m[2])];
+        if (mySeat === a) return Alice.seatLabel(b);
+        if (mySeat === b) return Alice.seatLabel(a);
+        return `${Alice.seatLabel(a)} & ${Alice.seatLabel(b)}`;
+      }
+      m = /^npc:(\d+):(\d+)$/.exec(thread);
+      if (m) {
+        const name = Alice.chat.npcName(Number(m[1]));
+        return Number(m[2]) === mySeat ? name : `${name} & ${Alice.seatLabel(Number(m[2]))}`;
+      }
+      return thread;
+    },
+
+    // Every thread a seat can open: the group, a DM with each other seat, NPC threads that
+    // have started, and (once the game ends) everyone else's. Most recent activity first.
+    threadsFor(mySeat) {
+      const s = Alice.state;
+      const keys = ["group"];
+      for (const x of s?.seats ?? []) if (x.id !== mySeat) keys.push(Alice.chat.dmKey(mySeat, x.id));
+      for (const m of Alice.chat.messages) if (!keys.includes(m.thread)) keys.push(m.thread);
+      const lastId = (k) => Alice.chat.inThread(k).at(-1)?.id ?? 0;
+      return keys
+        .map((key, order) => ({ key, order, last: lastId(key) }))
+        .sort((a, b) => b.last - a.last || a.order - b.order)
+        .map((t) => t.key);
+    },
+
+    // Where the message fell on the game clock, as the countdown showed it.
+    timeLabel(msg) {
+      const d = Alice.state?.clock.durationMs ?? 0;
+      return Alice.fmt(d - msg.gameMs);
+    },
   },
 
   async act(type, data = {}) {

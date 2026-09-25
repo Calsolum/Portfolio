@@ -264,7 +264,7 @@ export const projects: Project[] = [
     category: "projects",
     kind: "Game Assistant · Raspberry Pi",
     blurb:
-      "A LAN companion for the silent roleplaying game, hosted on a Raspberry Pi. A shared table screen keeps the 90-minute clock and soundtrack in sync, players join by QR code or NFC tag, and each phone buzzes when its timed clue is due.",
+      "A LAN companion for the silent roleplaying game, hosted on a Raspberry Pi. A shared table screen keeps the 90-minute clock and soundtrack in sync, players join by QR code or NFC tag and text in character through a built-in messenger, and each phone buzzes when its timed clue is due.",
     stack: "Node.js · Server-Sent Events · Vanilla HTML · CSS · JavaScript · No dependencies",
     tags: ["Node.js", "Raspberry Pi", "Real-time"],
     // Needs its LAN server, so the source is the thing to link to.
