@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Join · Alice is Missing</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="conn" hidden>Reconnecting to the game…</div>
+<main class="wrap">
+  <h1>Alice is Missing</h1>
+  <p class="sub" id="lead">Pick your seat.</p>
+  <div id="error" class="card" hidden style="border-color:var(--alert);color:var(--alert)"></div>
+  <div id="current" hidden style="margin-top:16px"></div>
+  <h2>Seats</h2>
+  <div id="seats" class="stack"></div>
+  <p class="hint">Taken seats are held by another phone. If you switched phones, ask the facilitator to release your old seat.</p>
+  <h2>Everyone else</h2>
+  <div class="row">
+    <a class="btn" href="/table">Table screen</a>
+    <a class="btn" href="/facilitator">Facilitator</a>
+  </div>
+</main>
+<script src="/vendor/qrcode.js"></script>
+<script src="/client.js"></script>
+<script>
+const { esc, store } = Alice;
+const params = new URLSearchParams(location.search);
+const showError = (msg) => {
+  const el = document.getElementById("error");
+  el.textContent = msg;
+  el.hidden = !msg;
+};
+
+async function claim(seat) {
+  try {
+    const { token } = await Alice.act("claim", { seat });
+    store.set("alice.token", token);
+    location.replace("/player");
+  } catch (err) {
+    showError(err.message);
+    history.replaceState(null, "", "/join");
+  }
+}
+
+async function init() {
+  const seat = Number(params.get("seat"));
+  if (seat) return claim(seat); // QR code or NFC tag for a specific seat
+  if (store.get("alice.token")) {
+    const { seat: mine } = await Alice.act("whoami").catch(() => ({}));
+    if (mine) {
+      const el = document.getElementById("current");
+      el.hidden = false;
+      el.innerHTML = `<a class="btn primary" href="/player">You're in seat ${mine} — open your screen</a>`;
+    } else {
+      store.set("alice.token", null);
+    }
+  }
+  Alice.connect("lobby", render);
+}
+
+function render(s) {
+  document.getElementById("seats").innerHTML = s.seats
+    .map(
+      (seat) => `<div class="card row">
+        <span class="dot ${seat.online ? "on" : ""}"></span>
+        <div class="grow"><strong>Seat ${seat.id}</strong>${seat.character || seat.name ? ` · ${esc(seat.character || seat.name)}` : ""}</div>
+        <button class="${seat.claimed ? "" : "primary"}" data-seat="${seat.id}" ${seat.claimed ? "disabled" : ""}>${seat.claimed ? "Taken" : "Sit here"}</button>
+      </div>`,
+    )
+    .join("");
+}
+
+document.getElementById("seats").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-seat]");
+  if (b) claim(Number(b.dataset.seat));
+});
+
+init();
+</script>
+</body>
+</html>
