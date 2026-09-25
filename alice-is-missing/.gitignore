@@ -1,0 +1,5 @@
+# Your soundtrack and the saved game stay on the Pi.
+media/*
+!media/.gitkeep
+data/*
+!data/.gitkeep

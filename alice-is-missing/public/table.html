@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Table · Alice is Missing</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/app.css">
+<style>
+  body { overflow-x: hidden; }
+  .stage {
+    min-height: 100vh; min-height: 100dvh; display: grid; gap: 24px; align-content: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 24px) 16px 24px; max-width: 1200px; margin: 0 auto;
+  }
+  .stage.lobby { grid-template-columns: minmax(0, 1fr) minmax(0, 360px); align-items: center; }
+  @media (max-width: 760px) { .stage.lobby { grid-template-columns: minmax(0, 1fr); } }
+  .main { text-align: center; }
+  .title { font: 600 clamp(1.2rem, 3vw, 1.8rem) var(--serif); color: var(--text2); letter-spacing: .04em; }
+  .table-timer { font: 200 clamp(5rem, 24vw, 16rem)/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.03em; margin: 12px 0; }
+  .table-timer.paused { color: var(--text3); }
+  .next { font-size: clamp(1rem, 2.4vw, 1.5rem); color: var(--text2); }
+  .due { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+  .due .pill { font-size: clamp(.8rem, 1.6vw, 1rem); padding: 10px 14px; }
+  .join { text-align: center; }
+  .join .qr { max-width: 320px; margin: 0 auto 12px; }
+  .roster { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; margin-top: 16px; color: var(--text2); }
+  .roster span { display: inline-flex; align-items: center; gap: 6px; }
+  .announce { margin: 24px auto 0; max-width: 42rem; font: 500 clamp(1rem, 2.4vw, 1.6rem)/1.35 var(--serif); color: var(--accent); }
+  .bar { position: fixed; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); display: flex; gap: 8px; opacity: .55; }
+  .bar:hover, .bar:focus-within { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="conn" hidden>Reconnecting to the game…</div>
+
+<div id="soundGate" class="overlay">
+  <p class="big">Table screen</p>
+  <p class="sub" id="soundNote">Tap once so this screen is allowed to play the soundtrack.</p>
+  <button class="primary" id="enable">Enable sound</button>
+  <button class="small" id="silent">Continue without sound</button>
+</div>
+
+<div class="stage" id="stage">
+  <section class="main">
+    <div class="title">Alice is Missing</div>
+    <div class="table-timer" id="timer">90:00</div>
+    <div class="next" id="next"></div>
+    <div class="due" id="due"></div>
+    <p class="announce" id="announce" hidden></p>
+    <p id="transcript" hidden style="margin-top:24px"><a class="btn primary" href="/transcript">Read the transcript</a></p>
+  </section>
+  <section class="join" id="join">
+    <div id="qr"></div>
+    <div class="mono" id="joinUrl"></div>
+    <p class="hint">Scan to join, or tap your seat's NFC tag.</p>
+    <div class="roster" id="roster"></div>
+  </section>
+</div>
+
+<div class="bar">
+  <span class="pill" id="audioState">No sound</span>
+  <button class="small" id="toggle">Pause</button>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+
+<script src="/vendor/qrcode.js"></script>
+<script src="/client.js"></script>
+<script>
+const { esc, fmt } = Alice;
+const audio = document.getElementById("audio");
+let soundOn = false;
+let lastQr = "";
+
+function render(s) {
+  const lobby = s.phase === "setup";
+  document.getElementById("stage").classList.toggle("lobby", lobby);
+  document.getElementById("join").hidden = !lobby;
+  if (lobby) {
+    const url = Alice.joinUrl();
+    if (url !== lastQr) {
+      document.getElementById("qr").innerHTML = Alice.qrSvg(url);
+      document.getElementById("joinUrl").textContent = url;
+      lastQr = url;
+    }
+    document.getElementById("roster").innerHTML = s.seats
+      .map((x) => `<span><i class="dot ${x.online ? "on" : ""}"></i>${esc(x.character || x.name || `Seat ${x.id}`)}</span>`)
+      .join("");
+  }
+
+  document.getElementById("due").innerHTML = Alice.dueIntervals()
+    .map((m) => `<span class="pill alert">${m}:00 clue · ${esc(Alice.holderLabel(m))}</span>`)
+    .join("");
+
+  document.getElementById("transcript").hidden = s.phase !== "ended";
+  const announce = document.getElementById("announce");
+  announce.hidden = !s.announcement;
+  announce.textContent = s.announcement;
+
+  const toggle = document.getElementById("toggle");
+  toggle.hidden = s.phase === "setup" || s.phase === "ended";
+  toggle.textContent = s.phase === "paused" ? "Resume" : "Pause";
+
+  if (s.soundtrack && audio.dataset.src !== s.soundtrack) {
+    audio.dataset.src = s.soundtrack;
+    audio.src = s.soundtrack;
+  }
+  document.getElementById("soundNote").textContent = s.soundtrack
+    ? "Tap once so this screen is allowed to play the soundtrack."
+    : "No soundtrack on the Pi yet — add an audio file to the media folder. The timer works without it.";
+  syncAudio();
+}
+
+// Keep the soundtrack where the clock says it should be.
+function syncAudio() {
+  const s = Alice.state;
+  const label = document.getElementById("audioState");
+  if (!s || !soundOn || !s.soundtrack) {
+    label.textContent = "No sound";
+    return;
+  }
+  if (s.clock.speed !== 1) {
+    audio.pause();
+    label.textContent = `Muted at x${s.clock.speed}`;
+    return;
+  }
+  if (s.phase !== "running") {
+    audio.pause();
+    label.textContent = audio.readyState >= 3 ? "Sound ready" : "Loading sound";
+    return;
+  }
+  const target = Alice.elapsedMs() / 1000 + s.config.audioOffsetSeconds;
+  if (Math.abs(audio.currentTime - target) > 1.5) audio.currentTime = target;
+  if (audio.paused) audio.play().catch(() => {});
+  label.textContent = "Playing";
+}
+
+function tick() {
+  const s = Alice.state;
+  if (s) {
+    const t = document.getElementById("timer");
+    t.textContent = fmt(Alice.remainingMs());
+    t.classList.toggle("paused", s.phase !== "running");
+    const next = Alice.nextInterval();
+    document.getElementById("next").textContent =
+      s.phase === "setup" ? "Waiting to start"
+        : s.phase === "ended" ? "Time's up"
+        : s.phase === "paused" ? "Paused"
+        : next != null ? `Next clue at ${next}:00 · ${Alice.holderLabel(next)}` : "No more clues";
+  }
+  requestAnimationFrame(tick);
+}
+
+const reportAudio = (ready) => Alice.act("tableAudio", { ready }).catch(() => {});
+audio.addEventListener("canplaythrough", () => soundOn && reportAudio(true));
+audio.addEventListener("error", () => soundOn && reportAudio(false));
+addEventListener("pagehide", () => {
+  navigator.sendBeacon("/api/action", new Blob([JSON.stringify({ type: "tableAudio", ready: false })], { type: "application/json" }));
+});
+
+document.getElementById("enable").onclick = async () => {
+  soundOn = true;
+  document.getElementById("soundGate").hidden = true;
+  Alice.wakeLock();
+  document.documentElement.requestFullscreen?.().catch(() => {});
+  // Play-then-pause inside the tap unlocks audio for later, unprompted playback.
+  if (audio.src) {
+    try {
+      await audio.play();
+      audio.pause();
+    } catch {
+      /* unlocking failed; syncAudio will retry */
+    }
+    if (audio.readyState >= 3) reportAudio(true);
+  }
+  syncAudio();
+};
+document.getElementById("silent").onclick = () => {
+  document.getElementById("soundGate").hidden = true;
+  Alice.wakeLock();
+};
+document.getElementById("toggle").onclick = () => {
+  const s = Alice.state;
+  Alice.host(s.phase === "paused" ? "resume" : "pause").catch((err) => Alice.toast(err.message));
+};
+
+setInterval(syncAudio, 1000);
+Alice.connect("table", render);
+tick();
+</script>
+</body>
+</html>

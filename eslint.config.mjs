@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone Pi app: plain Node and browser JS, outside the Next build.
+    "alice-is-missing/**",
   ]),
 ]);
 

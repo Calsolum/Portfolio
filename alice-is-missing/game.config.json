@@ -1,0 +1,25 @@
+{
+  "_note": "Game structure only - no card text. Check these values against your own rulebook and edit freely; the server reads this file at startup.",
+  "durationMinutes": 90,
+  "audioOffsetSeconds": 0,
+  "minSeats": 3,
+  "maxSeats": 5,
+  "clueIntervals": [80, 70, 60, 50, 40, 30, 20, 10],
+  "cardsPerInterval": 3,
+  "expansions": {
+    "silentFalls": {
+      "label": "Silent Falls",
+      "adds": "4 Characters, 2 Relationship cards, 3 Suspects, 3 Locations, 4 Searching cards, 22 Clue cards"
+    }
+  },
+  "setupChecklist": [
+    "Everyone joins on their phone (QR code on the table screen, or tap a seat's NFC tag)",
+    "Choose Character cards and enter them in the facilitator's setup",
+    "Relationship cards and prompts",
+    "Suspect and Location cards - record the draws privately in the setup",
+    "Sort the Clue cards by time and note who holds each interval",
+    "Swap numbers and save each other under character names",
+    "Mute every other notification on every phone",
+    "Table screen: tap to enable sound, then check the soundtrack says ready"
+  ]
+}

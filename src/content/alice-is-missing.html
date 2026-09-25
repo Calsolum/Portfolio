@@ -1,0 +1,17 @@
+<p><em>Game Assistant · Raspberry Pi</em></p>
+
+<p>Alice is Missing is played in silence. Nobody talks for ninety minutes; the whole story happens in text messages. This keeps the clock so nobody has to break the quiet to check it.</p>
+
+<hr />
+
+<p>The game runs to a 90-minute soundtrack, and timed Clue cards come out as the clock runs down. That leaves the facilitator in charge of the music, the timer, and remembering who holds the 60-minute card, all while playing a character. This assistant takes those jobs over, from a Raspberry Pi on the home network.</p>
+
+<p>A shared table screen shows the countdown, plays the soundtrack, and marks each clue as its minute arrives. Players join from their own phones by scanning a QR code or tapping an NFC tag at their seat. When a player's clue comes due, their phone vibrates and the screen turns red. Nobody else is alerted. The facilitator's screen handles seats, characters, who holds which clue, and the private Suspect and Location draws.</p>
+
+<p>It also carries the game's texting. The Pi runs a small messenger, so nobody swaps real phone numbers or mixes in-game texts with real ones. Each player texts as their character, in the group chat or privately. The facilitator can send messages from an unknown number and read the players' replies, but never their private chats with each other. When time runs out, every conversation opens up, and the group can read the whole transcript together.</p>
+
+<p>Every device follows one clock on the server. Each phone advances time from the last update it received, so every screen shows the same second even when the devices' own clocks disagree. The soundtrack seeks itself back into place after a pause, a reload, or a dropped connection. The game state is saved to disk, so if the Pi reboots mid-game, play resumes where it stopped.</p>
+
+<p>It is one Node process with no dependencies and no build step, small enough to run on a Pi Zero 2 W. It holds none of the game's card text, only the structure of the session. You still need your own copy of the game.</p>
+
+<p><em>It runs on a local network rather than the public web. The source and Pi setup guide are on <a href="https://github.com/calsolum/portfolio/tree/portfolio/alice-is-missing">GitHub</a>.</em></p>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR cards · Alice is Missing</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/app.css">
+<style>
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
+  .tent { background: #fff; color: #111; border-radius: 12px; padding: 16px; text-align: center; break-inside: avoid; }
+  .tent h3 { font: 600 1.2rem var(--serif); }
+  .tent p { font-size: .85rem; color: #444; margin: 2px 0 10px; }
+  .tent .mono { color: #555; font-size: .7rem; margin-top: 8px; }
+  @media print {
+    html, body { background: #fff; }
+    .noprint { display: none !important; }
+    .wrap { max-width: none; padding: 0; }
+    .grid { grid-template-columns: repeat(3, 1fr); }
+    .tent { border: 1px dashed #999; }
+  }
+</style>
+</head>
+<body>
+<div id="conn" hidden>Reconnecting to the game…</div>
+<main class="wrap" style="max-width:960px">
+  <div class="noprint">
+    <h1>QR cards</h1>
+    <p class="sub">One card per seat. Print them, fold them into table tents, and each player scans their own.</p>
+    <div class="row" style="margin-top:12px">
+      <button class="primary" onclick="print()">Print</button>
+      <a class="btn" href="/facilitator">Back to facilitator</a>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+<script src="/vendor/qrcode.js"></script>
+<script src="/client.js"></script>
+<script>
+const { esc } = Alice;
+let last = "";
+Alice.connect("lobby", (s) => {
+  const cards = [
+    { title: "Join the game", sub: "Pick any open seat", url: Alice.joinUrl() },
+    ...s.seats.map((x) => ({
+      title: x.character || `Seat ${x.id}`,
+      sub: [x.name, `Seat ${x.id}`].filter(Boolean).join(" · "),
+      url: Alice.joinUrl(x.id),
+    })),
+  ];
+  const key = JSON.stringify(cards);
+  if (key === last) return; // presence changes shouldn't redraw every QR
+  last = key;
+  document.getElementById("grid").innerHTML = cards
+    .map((c) => `<div class="tent"><h3>${esc(c.title)}</h3><p>${esc(c.sub)}</p>${Alice.qrSvg(c.url)}<div class="mono">${esc(c.url)}</div></div>`)
+    .join("");
+});
+</script>
+</body>
+</html>
