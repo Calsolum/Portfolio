@@ -2,14 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0b0e14">
 <title>Your seat · Alice is Missing</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="/app.css">
 <style>
+  html, body { height: 100%; overflow: hidden; }
+  .app { height: var(--app-h, 100dvh); display: flex; flex-direction: column; max-width: 720px; margin: 0 auto; }
+  .topbar {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 10px; border-bottom: 1px solid var(--line);
+  }
+  .topbar .title { flex: 1; min-width: 0; font: 600 1.15rem var(--serif); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar .mini { font: 500 .95rem var(--mono); font-variant-numeric: tabular-nums; color: var(--text2); }
+  .topbar .mini.paused { color: var(--text3); }
+  .topbar .back { min-height: 36px; padding: 6px 10px; }
+  .panel { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .panel.pad { padding: 16px 16px 40px; }
+  .thread { display: flex; flex-direction: column; overflow: hidden; }
+  .thread .scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .tabbar { display: flex; border-top: 1px solid var(--line); flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .tabbar button {
+    flex: 1; border: 0; border-radius: 0; background: none; color: var(--text3); min-height: 54px;
+    font-size: .82rem; letter-spacing: .04em;
+  }
+  .tabbar button[aria-selected="true"] { color: var(--accent); }
+  .tabbar .badge { margin-left: 4px; }
   .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .clock { text-align: center; margin: 28px 0 8px; }
+  .clock { text-align: center; margin: 24px 0 8px; }
   .next { text-align: center; color: var(--text2); }
   .clue { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .clue:last-child { border-bottom: 0; }
@@ -31,53 +52,128 @@
   <button class="primary" id="done">I've sent it</button>
 </div>
 
-<main class="wrap">
-  <div class="head">
-    <div>
-      <h1 id="who">…</h1>
-      <p class="sub" id="seatLine"></p>
+<div class="app">
+  <header class="topbar">
+    <button class="back small" id="back" hidden aria-label="Back to conversations">‹ Back</button>
+    <div class="title" id="title">…</div>
+    <span class="mini" id="miniTimer">90:00</span>
+  </header>
+
+  <!-- Messages: conversation list -->
+  <section class="panel" id="list" role="tabpanel">
+    <ul class="threads" id="threads"></ul>
+    <p class="hint" style="padding:0 16px 24px">Texts stay on the Pi. Private chats are private until the game ends, then everyone can read the transcript.</p>
+  </section>
+
+  <!-- Messages: one conversation -->
+  <section class="panel thread" id="thread" hidden>
+    <div class="scroll" id="scroll"><div class="bubbles" id="bubbles"></div></div>
+    <div class="typing" id="typing" aria-live="polite"></div>
+    <form class="composer" id="composer">
+      <textarea id="text" rows="1" maxlength="1000" enterkeyhint="send" aria-label="Message"></textarea>
+      <button class="primary" type="submit">Send</button>
+    </form>
+  </section>
+
+  <!-- Clues: the clock and this seat's cards -->
+  <section class="panel pad" id="cluesTab" role="tabpanel" hidden>
+    <div class="head">
+      <div>
+        <h1 id="who">…</h1>
+        <p class="sub" id="seatLine"></p>
+      </div>
+      <span class="pill" id="phase"></span>
     </div>
-    <span class="pill" id="phase"></span>
-  </div>
 
-  <div class="clock"><div class="timer" id="timer">90:00</div></div>
-  <p class="next" id="next"></p>
+    <div class="clock"><div class="timer" id="timer">90:00</div></div>
+    <p class="next" id="next"></p>
+    <p id="transcriptLink" hidden style="text-align:center;margin-top:14px"><a class="btn primary" href="/transcript">Read the full transcript</a></p>
 
-  <h2>Your clue cards</h2>
-  <div class="card" id="clues"></div>
-  <p class="hint">Your phone will buzz and this screen will turn red when it's time to reveal one. Keep this page open.</p>
+    <h2>Your clue cards</h2>
+    <div class="card" id="clues"></div>
+    <p class="hint">Your phone will buzz and this screen will turn red when it's time to reveal one. Keep this page open.</p>
 
-  <h2>Seat</h2>
-  <div class="row">
-    <button class="small" id="wake">Keep screen on</button>
-    <button class="small danger" id="leave">Leave seat</button>
-  </div>
-</main>
+    <h2>Seat</h2>
+    <div class="row">
+      <button class="small" id="wake">Keep screen on</button>
+      <button class="small danger" id="leave">Leave seat</button>
+    </div>
+  </section>
+
+  <nav class="tabbar" id="tabbar" role="tablist">
+    <button role="tab" data-tab="messages" aria-selected="true">Messages<span class="badge" id="msgBadge" hidden></span></button>
+    <button role="tab" data-tab="clues" aria-selected="false">Clues<span class="badge" id="clueBadge" hidden>!</span></button>
+  </nav>
+</div>
 
 <script src="/vendor/qrcode.js"></script>
 <script src="/client.js"></script>
 <script>
-const { esc, store, fmt } = Alice;
+const { esc, store, fmt, chat } = Alice;
+const $ = (id) => document.getElementById(id);
 const token = store.get("alice.token");
 if (!token) location.replace("/join");
 
-const seen = new Set();
+const seenClues = new Set();
 let alerting = null;
+let tab = "messages";
+let openThread = null;
+const typingUntil = {}; // thread -> { name, until }
+
+const mySeat = () => Alice.state?.mySeat ?? null;
+const me = () => ({ seat: mySeat() });
+
+// ---------------------------------------------------------------- layout
+
+function show() {
+  const inThread = tab === "messages" && openThread;
+  $("list").hidden = tab !== "messages" || Boolean(openThread);
+  $("thread").hidden = !inThread;
+  $("cluesTab").hidden = tab !== "clues";
+  $("tabbar").hidden = Boolean(inThread);
+  $("back").hidden = !inThread;
+  for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === tab));
+  renderTitle();
+}
+
+function renderTitle() {
+  const s = Alice.state;
+  if (!s?.mySeat) return;
+  const self = s.seats.find((x) => x.id === s.mySeat);
+  $("title").textContent = tab === "messages" && openThread
+    ? chat.threadName(openThread, s.mySeat)
+    : self?.character || self?.name || `Seat ${s.mySeat}`;
+}
+
+// Keep the composer above the on-screen keyboard.
+function fitViewport() {
+  const vv = window.visualViewport;
+  if (vv) document.documentElement.style.setProperty("--app-h", `${vv.height}px`);
+}
+window.visualViewport?.addEventListener("resize", () => {
+  fitViewport();
+  if (openThread) scrollToEnd();
+});
+fitViewport();
+
+// ---------------------------------------------------------------- game state
 
 function render(s) {
   const unseated = !s.mySeat;
-  document.getElementById("unseated").hidden = !unseated;
+  $("unseated").hidden = !unseated;
   if (unseated) return;
 
-  const me = s.seats.find((x) => x.id === s.mySeat);
-  document.getElementById("who").textContent = me.character || me.name || `Seat ${me.id}`;
-  document.getElementById("seatLine").textContent = [me.name && me.character ? me.name : "", `Seat ${me.id}`].filter(Boolean).join(" · ");
-  const phase = document.getElementById("phase");
+  const self = s.seats.find((x) => x.id === s.mySeat);
+  $("who").textContent = self.character || self.name || `Seat ${self.id}`;
+  $("seatLine").textContent = [self.name && self.character ? self.name : "", `Seat ${self.id}`].filter(Boolean).join(" · ");
+  $("text").placeholder = `Text as ${self.character || self.name || `Seat ${self.id}`}`;
+  const phase = $("phase");
   phase.textContent = Alice.phaseLabel(s.phase);
   phase.className = `pill ${s.phase === "running" ? "on" : ""}`;
+  $("transcriptLink").hidden = s.phase !== "ended";
 
   const mine = s.config.intervals.filter((m) => s.clues[m] === s.mySeat);
-  document.getElementById("clues").innerHTML = mine.length
+  $("clues").innerHTML = mine.length
     ? mine
         .map((m) => {
           const status = s.revealed.includes(m)
@@ -93,39 +189,225 @@ function render(s) {
   // Alert for the earliest clue of mine that's due and not yet sent.
   const due = Alice.dueIntervals().filter((m) => s.clues[m] === s.mySeat);
   alerting = due[0] ?? null;
-  const alert = document.getElementById("alert");
-  alert.hidden = alerting == null;
+  $("alert").hidden = alerting == null;
+  $("clueBadge").hidden = alerting == null;
   if (alerting != null) {
-    document.getElementById("alertText").textContent = `Reveal your ${alerting}-minute clue`;
-    if (!seen.has(alerting)) {
-      seen.add(alerting);
+    $("alertText").textContent = `Reveal your ${alerting}-minute clue`;
+    if (!seenClues.has(alerting)) {
+      seenClues.add(alerting);
       navigator.vibrate?.([400, 150, 400, 150, 800]);
     }
   }
+
+  renderThreads(); // names may have changed
+  renderTitle();
 }
+
+// ---------------------------------------------------------------- messages
+
+function avatar(thread) {
+  if (thread === "group") return `<span class="avatar group">∗</span>`;
+  const name = chat.threadName(thread, mySeat());
+  return `<span class="avatar ${thread.startsWith("npc:") ? "npc" : ""}">${esc(name.slice(0, 1).toUpperCase())}</span>`;
+}
+
+function preview(thread) {
+  const t = typingUntil[thread];
+  if (t && t.until > Date.now()) return `${esc(t.name)} is typing…`;
+  const last = chat.inThread(thread).at(-1);
+  if (!last) return thread === "group" ? "Everyone" : "No messages yet";
+  const who = chat.isFrom(last, me()) ? "You" : thread === "group" ? chat.senderName(last) : "";
+  return esc(who ? `${who}: ${last.text}` : last.text);
+}
+
+function renderThreads() {
+  if (!Alice.state?.mySeat) return;
+  let total = 0;
+  $("threads").innerHTML = chat
+    .threadsFor(mySeat())
+    .map((thread) => {
+      const n = chat.unread(thread, me());
+      total += n;
+      return `<li><button data-thread="${esc(thread)}" class="${n ? "unread" : ""}">
+        ${avatar(thread)}
+        <span class="meta"><span class="name">${esc(chat.threadName(thread, mySeat()))}</span><span class="preview">${preview(thread)}</span></span>
+        ${n ? `<span class="badge">${n}</span>` : ""}
+      </button></li>`;
+    })
+    .join("");
+  $("msgBadge").hidden = !total;
+  $("msgBadge").textContent = total;
+}
+
+function nearBottom() {
+  const el = $("scroll");
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+}
+function scrollToEnd() {
+  const el = $("scroll");
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderThread() {
+  if (!openThread) return;
+  const msgs = chat.inThread(openThread);
+  // Name each sender in the group chat, and in other people's threads once the game has ended.
+  const t = /^(?:dm:(\d+)-(\d+)|npc:\d+:(\d+))$/.exec(openThread);
+  const participant = t && [t[1], t[2], t[3]].map(Number).includes(mySeat());
+  const group = openThread === "group" || !participant;
+  $("bubbles").innerHTML = msgs.length
+    ? msgs
+        .map((m, i) => {
+          const mine = chat.isFrom(m, me());
+          const prev = msgs[i - 1];
+          const next = msgs[i + 1];
+          const sameAsPrev = prev && JSON.stringify(prev.from) === JSON.stringify(m.from);
+          const sameAsNext = next && JSON.stringify(next.from) === JSON.stringify(m.from);
+          const label = !mine && !sameAsPrev && (group || m.from.npc) ? `<span class="from">${esc(chat.senderName(m))}</span>` : "";
+          return `<div class="bubble-wrap ${mine ? "mine" : ""} ${m.from.npc ? "npc" : ""} ${sameAsPrev ? "" : "gap"}">
+            ${label}<div class="bubble">${esc(m.text)}</div>
+            ${sameAsNext ? "" : `<span class="time">${chat.timeLabel(m)}</span>`}
+          </div>`;
+        })
+        .join("")
+    : `<p class="empty-thread">Nothing here yet.</p>`;
+  chat.markRead(openThread);
+}
+
+function renderTyping() {
+  const t = openThread && typingUntil[openThread];
+  $("typing").textContent = t && t.until > Date.now() ? `${t.name} is typing…` : "";
+}
+
+function openConversation(thread) {
+  openThread = thread;
+  show();
+  renderThread();
+  renderTyping();
+  scrollToEnd();
+  renderThreads();
+}
+
+chat.enable(
+  "player",
+  (msg) => {
+    const stick = !msg || nearBottom() || chat.isFrom(msg, me());
+    if (msg && !chat.isFrom(msg, me())) {
+      delete typingUntil[msg.thread];
+      const watching = openThread === msg.thread && document.visibilityState === "visible";
+      if (!watching) navigator.vibrate?.(120);
+    }
+    renderThread();
+    renderTyping();
+    if (stick) scrollToEnd();
+    renderThreads();
+  },
+  (t) => {
+    typingUntil[t.thread] = { name: t.from.seat ? Alice.seatLabel(t.from.seat) : t.from.name, until: Date.now() + 4000 };
+    renderTyping();
+    renderThreads();
+  },
+);
+
+// Expire typing indicators.
+setInterval(() => {
+  if (Object.values(typingUntil).some((t) => t.until <= Date.now())) {
+    for (const [k, t] of Object.entries(typingUntil)) if (t.until <= Date.now()) delete typingUntil[k];
+    renderTyping();
+    renderThreads();
+  }
+}, 1000);
+
+// ---------------------------------------------------------------- composer
+
+const text = $("text");
+let lastTypingSent = 0;
+
+function autosize() {
+  text.style.height = "auto";
+  text.style.height = `${Math.min(text.scrollHeight, 140)}px`;
+}
+
+text.addEventListener("input", () => {
+  autosize();
+  if (text.value.trim() && Date.now() - lastTypingSent > 2500) {
+    lastTypingSent = Date.now();
+    Alice.act("typing", { thread: openThread }).catch(() => {});
+  }
+});
+text.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    $("composer").requestSubmit();
+  }
+});
+$("composer").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = text.value.trim();
+  if (!body || !openThread) return;
+  text.value = "";
+  autosize();
+  lastTypingSent = 0;
+  try {
+    await Alice.act("send", { thread: openThread, text: body });
+  } catch (err) {
+    text.value = body; // don't lose what they wrote
+    autosize();
+    Alice.toast(err.message);
+  }
+  text.focus();
+});
+
+// ---------------------------------------------------------------- navigation
+
+$("threads").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-thread]");
+  if (b) openConversation(b.dataset.thread);
+});
+$("back").onclick = () => {
+  openThread = null;
+  text.blur();
+  show();
+  renderThreads();
+};
+$("tabbar").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-tab]");
+  if (!b) return;
+  tab = b.dataset.tab;
+  show();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && openThread) {
+    chat.markRead(openThread);
+    renderThreads();
+  }
+});
 
 function tick() {
   const s = Alice.state;
   if (s) {
-    const t = document.getElementById("timer");
-    t.textContent = fmt(Alice.remainingMs());
-    t.classList.toggle("paused", s.phase !== "running");
+    const remaining = fmt(Alice.remainingMs());
+    const paused = s.phase !== "running";
+    $("timer").textContent = remaining;
+    $("timer").classList.toggle("paused", paused);
+    $("miniTimer").textContent = remaining;
+    $("miniTimer").classList.toggle("paused", paused);
     const next = Alice.nextInterval();
-    document.getElementById("next").textContent =
+    $("next").textContent =
       s.phase === "ended" ? "Time's up." : next != null ? `Next clue at ${next}:00 · ${Alice.holderLabel(next)}` : "No more clues.";
   }
   requestAnimationFrame(tick);
 }
 
-document.getElementById("done").onclick = async () => {
+$("done").onclick = async () => {
   try {
     await Alice.act("reveal", { interval: alerting });
   } catch (err) {
     Alice.toast(err.message);
   }
 };
-document.getElementById("wake").onclick = () => Alice.wakeLock().then(() => Alice.toast("Trying to keep the screen awake"));
-document.getElementById("leave").onclick = async () => {
+$("wake").onclick = () => Alice.wakeLock().then(() => Alice.toast("Trying to keep the screen awake"));
+$("leave").onclick = async () => {
   if (!confirm("Give up this seat?")) return;
   await Alice.act("leave").catch(() => {});
   store.set("alice.token", null);
@@ -135,6 +417,7 @@ document.getElementById("leave").onclick = async () => {
 document.addEventListener("click", () => Alice.wakeLock(), { once: true });
 
 Alice.connect("player", render, { token });
+show();
 tick();
 </script>
 </body>
