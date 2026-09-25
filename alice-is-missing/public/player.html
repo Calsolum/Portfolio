@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Your seat · Alice is Missing</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/app.css">
+<style>
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .clock { text-align: center; margin: 28px 0 8px; }
+  .next { text-align: center; color: var(--text2); }
+  .clue { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .clue:last-child { border-bottom: 0; }
+  .clue strong { font: 600 1.1rem var(--mono); }
+</style>
+</head>
+<body>
+<div id="conn" hidden>Reconnecting to the game…</div>
+
+<div id="unseated" class="overlay" hidden>
+  <p class="big">You don't have a seat</p>
+  <p class="sub">The facilitator may have released it, or this is a new phone.</p>
+  <a class="btn primary" href="/join">Pick a seat</a>
+</div>
+
+<div id="alert" class="overlay alert" hidden role="alertdialog" aria-labelledby="alertText">
+  <p class="big" id="alertText"></p>
+  <p class="sub">Send the card's text the way it says to, then tap below.</p>
+  <button class="primary" id="done">I've sent it</button>
+</div>
+
+<main class="wrap">
+  <div class="head">
+    <div>
+      <h1 id="who">…</h1>
+      <p class="sub" id="seatLine"></p>
+    </div>
+    <span class="pill" id="phase"></span>
+  </div>
+
+  <div class="clock"><div class="timer" id="timer">90:00</div></div>
+  <p class="next" id="next"></p>
+
+  <h2>Your clue cards</h2>
+  <div class="card" id="clues"></div>
+  <p class="hint">Your phone will buzz and this screen will turn red when it's time to reveal one. Keep this page open.</p>
+
+  <h2>Seat</h2>
+  <div class="row">
+    <button class="small" id="wake">Keep screen on</button>
+    <button class="small danger" id="leave">Leave seat</button>
+  </div>
+</main>
+
+<script src="/vendor/qrcode.js"></script>
+<script src="/client.js"></script>
+<script>
+const { esc, store, fmt } = Alice;
+const token = store.get("alice.token");
+if (!token) location.replace("/join");
+
+const seen = new Set();
+let alerting = null;
+
+function render(s) {
+  const unseated = !s.mySeat;
+  document.getElementById("unseated").hidden = !unseated;
+  if (unseated) return;
+
+  const me = s.seats.find((x) => x.id === s.mySeat);
+  document.getElementById("who").textContent = me.character || me.name || `Seat ${me.id}`;
+  document.getElementById("seatLine").textContent = [me.name && me.character ? me.name : "", `Seat ${me.id}`].filter(Boolean).join(" · ");
+  const phase = document.getElementById("phase");
+  phase.textContent = Alice.phaseLabel(s.phase);
+  phase.className = `pill ${s.phase === "running" ? "on" : ""}`;
+
+  const mine = s.config.intervals.filter((m) => s.clues[m] === s.mySeat);
+  document.getElementById("clues").innerHTML = mine.length
+    ? mine
+        .map((m) => {
+          const status = s.revealed.includes(m)
+            ? `<span class="pill ok">Sent</span>`
+            : s.fired.includes(m)
+              ? `<span class="pill alert">Now</span>`
+              : `<span class="pill">Waiting</span>`;
+          return `<div class="clue"><strong>${m}:00</strong>${status}</div>`;
+        })
+        .join("")
+    : `<p class="sub">None assigned to you yet.</p>`;
+
+  // Alert for the earliest clue of mine that's due and not yet sent.
+  const due = Alice.dueIntervals().filter((m) => s.clues[m] === s.mySeat);
+  alerting = due[0] ?? null;
+  const alert = document.getElementById("alert");
+  alert.hidden = alerting == null;
+  if (alerting != null) {
+    document.getElementById("alertText").textContent = `Reveal your ${alerting}-minute clue`;
+    if (!seen.has(alerting)) {
+      seen.add(alerting);
+      navigator.vibrate?.([400, 150, 400, 150, 800]);
+    }
+  }
+}
+
+function tick() {
+  const s = Alice.state;
+  if (s) {
+    const t = document.getElementById("timer");
+    t.textContent = fmt(Alice.remainingMs());
+    t.classList.toggle("paused", s.phase !== "running");
+    const next = Alice.nextInterval();
+    document.getElementById("next").textContent =
+      s.phase === "ended" ? "Time's up." : next != null ? `Next clue at ${next}:00 · ${Alice.holderLabel(next)}` : "No more clues.";
+  }
+  requestAnimationFrame(tick);
+}
+
+document.getElementById("done").onclick = async () => {
+  try {
+    await Alice.act("reveal", { interval: alerting });
+  } catch (err) {
+    Alice.toast(err.message);
+  }
+};
+document.getElementById("wake").onclick = () => Alice.wakeLock().then(() => Alice.toast("Trying to keep the screen awake"));
+document.getElementById("leave").onclick = async () => {
+  if (!confirm("Give up this seat?")) return;
+  await Alice.act("leave").catch(() => {});
+  store.set("alice.token", null);
+  location.replace("/join");
+};
+// Any tap counts as the user gesture that the wake lock and vibration need.
+document.addEventListener("click", () => Alice.wakeLock(), { once: true });
+
+Alice.connect("player", render, { token });
+tick();
+</script>
+</body>
+</html>
