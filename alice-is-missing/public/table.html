@@ -26,6 +26,7 @@
   .join .qr { max-width: 320px; margin: 0 auto 12px; }
   .roster { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; margin-top: 16px; color: var(--text2); }
   .roster span { display: inline-flex; align-items: center; gap: 6px; }
+  .announce { margin: 24px auto 0; max-width: 42rem; font: 500 clamp(1rem, 2.4vw, 1.6rem)/1.35 var(--serif); color: var(--accent); }
   .bar { position: fixed; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); display: flex; gap: 8px; opacity: .55; }
   .bar:hover, .bar:focus-within { opacity: 1; }
 </style>
@@ -46,6 +47,7 @@
     <div class="table-timer" id="timer">90:00</div>
     <div class="next" id="next"></div>
     <div class="due" id="due"></div>
+    <p class="announce" id="announce" hidden></p>
     <p id="transcript" hidden style="margin-top:24px"><a class="btn primary" href="/transcript">Read the transcript</a></p>
   </section>
   <section class="join" id="join">
@@ -92,6 +94,9 @@ function render(s) {
     .join("");
 
   document.getElementById("transcript").hidden = s.phase !== "ended";
+  const announce = document.getElementById("announce");
+  announce.hidden = !s.announcement;
+  announce.textContent = s.announcement;
 
   const toggle = document.getElementById("toggle");
   toggle.hidden = s.phase === "setup" || s.phase === "ended";

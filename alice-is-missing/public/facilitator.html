@@ -96,6 +96,24 @@
     </div>
   </details>
 
+  <h2>Players' screens</h2>
+  <div class="card stack">
+    <div>
+      <label class="lbl" for="announce">Announcement — tops every phone's "Right now" and shows on the table screen</label>
+      <form class="row" id="announceForm">
+        <input type="text" class="grow" id="announce" maxlength="280" placeholder="e.g. Five-minute break, then we resume">
+        <button type="submit" class="primary">Post</button>
+        <button type="button" id="announceClear">Clear</button>
+      </form>
+      <p class="hint" id="announceNow" hidden></p>
+    </div>
+    <div>
+      <label class="lbl" for="tableNotesInput">Table notes — shown on every phone's Rules tab (house rules, a quick reference in your words)</label>
+      <textarea id="tableNotesInput" maxlength="8000" style="min-height:140px"></textarea>
+    </div>
+    <p class="hint" id="rulesFound"></p>
+  </div>
+
   <h2>NPC texts</h2>
   <div class="card">
     <div class="row" id="npcList"></div>
@@ -260,6 +278,13 @@ function render(s) {
   // Private
   if (s.secret) for (const [k, v] of Object.entries(s.secret)) if ($(k)) fill($(k), v);
 
+  fill($("tableNotesInput"), s.tableNotes);
+  $("announceNow").hidden = !s.announcement;
+  $("announceNow").textContent = `Showing now: “${s.announcement}”`;
+  $("rulesFound").innerHTML = s.rules.length
+    ? `Rulebook files on the Pi: ${s.rules.map((r) => `<a href="${esc(r.url)}" target="_blank">${esc(r.title)}</a>`).join(", ")}`
+    : `No rulebook files yet. Put your copy (PDF or photos) in <span class="mono">media/rules/</span> on the Pi and it appears on every phone's Rules tab.`;
+
   renderNpcs();
 
   // Checklist
@@ -377,6 +402,28 @@ $("pinForm").addEventListener("submit", async (e) => {
   } catch (err) {
     Alice.toast(err.message);
   }
+});
+
+// ---- players' screens
+
+$("announceForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await Alice.host("notes", { announcement: $("announce").value });
+    $("announce").value = "";
+    Alice.toast("Posted to every screen");
+  } catch (err) {
+    Alice.toast(err.message);
+  }
+});
+$("announceClear").onclick = () => Alice.host("notes", { announcement: "" }).catch((err) => Alice.toast(err.message));
+
+let notesTimer = null;
+$("tableNotesInput").addEventListener("input", () => {
+  clearTimeout(notesTimer);
+  notesTimer = setTimeout(() => {
+    Alice.host("notes", { tableNotes: $("tableNotesInput").value }).catch((err) => Alice.toast(err.message));
+  }, 500);
 });
 
 // ---- NPC texts
