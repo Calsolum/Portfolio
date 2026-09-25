@@ -1,16 +1,19 @@
 # Alice is Missing — table assistant
 
 A small LAN web app for running *Alice is Missing* (Renegade Game Studios) at the table, from a
-Raspberry Pi. It keeps the 90-minute clock, plays the soundtrack on a shared screen, and buzzes
-the right player's phone when their timed Clue card is due. You still need the physical game:
+Raspberry Pi. It keeps the 90-minute clock, plays the soundtrack on a shared screen, buzzes
+the right player's phone when their timed Clue card is due, and has a built-in messenger, so
+nobody has to swap real phone numbers to play. You still need the physical game:
 it holds none of the card text, only the structure — which interval is next and who reveals it.
 
 - **Table screen** (`/table`) — a TV, tablet or laptop. Big countdown, the next clue, a join QR
   code before the game, and the soundtrack.
-- **Player phones** (`/join`) — scan the QR code or tap an NFC tag to take a seat. The screen
-  turns red and the phone vibrates when it's your clue's minute.
+- **Player phones** (`/join`) — scan the QR code or tap an NFC tag to take a seat. Text as your
+  character in the group chat or privately. The screen turns red and the phone vibrates when
+  it's your clue's minute.
 - **Facilitator** (`/facilitator`) — seats, characters, who holds which clue, private suspect and
-  location draws, and start/pause/adjust controls.
+  location draws, start/pause/adjust controls, and texting players as NPCs.
+- **Transcript** (`/transcript`) — every message, in order, once the game is over.
 
 Node 20+ built-ins only: no `npm install` and no build step. It runs happily on a Pi Zero 2 W.
 
@@ -59,6 +62,27 @@ If `alice.local` works on your network, set `PUBLIC_URL=http://alice.local:8080`
 tags. The tags then keep working if the Pi's IP address changes.
 
 If someone switches phones, the facilitator taps *Release seat* and they join again.
+
+## Messaging
+
+Every seat texts as its character. There's one group chat and a private thread between each
+pair of characters, with unread badges, typing indicators, and the game clock on each message.
+
+- **NPCs:** the facilitator can add senders like "Unknown number" and text any player, or the
+  group, as them. Players can reply, and the replies show up in the facilitator's console.
+- **Privacy:** while the game runs, a private chat is visible only to the two people in it. The
+  facilitator sees the group chat and NPC threads, never the private chats between players.
+  When the clock hits zero, everything unlocks. Anyone can open `/transcript` to read the whole
+  story, print it, or download it as JSON.
+- **Storage:** messages are saved to `data/messages.json` on the Pi and never leave your
+  network. Everything works without internet. *Clear messages* on the facilitator page, or
+  *New game*, wipes them.
+- **Keep the page open:** phones (iOS especially) pause background browser tabs. A phone that
+  was locked catches up on everything it missed the moment its page is visible again, but it
+  can't buzz while it's in the background.
+
+Pages trust the local network: anyone who can reach the Pi can open the facilitator page unless
+you set `ALICE_PIN`. Set it if you want NPC texting and the private draws locked down.
 
 ## Put it on the Pi
 

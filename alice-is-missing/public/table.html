@@ -46,6 +46,7 @@
     <div class="table-timer" id="timer">90:00</div>
     <div class="next" id="next"></div>
     <div class="due" id="due"></div>
+    <p id="transcript" hidden style="margin-top:24px"><a class="btn primary" href="/transcript">Read the transcript</a></p>
   </section>
   <section class="join" id="join">
     <div id="qr"></div>
@@ -89,6 +90,8 @@ function render(s) {
   document.getElementById("due").innerHTML = Alice.dueIntervals()
     .map((m) => `<span class="pill alert">${m}:00 clue · ${esc(Alice.holderLabel(m))}</span>`)
     .join("");
+
+  document.getElementById("transcript").hidden = s.phase !== "ended";
 
   const toggle = document.getElementById("toggle");
   toggle.hidden = s.phase === "setup" || s.phase === "ended";

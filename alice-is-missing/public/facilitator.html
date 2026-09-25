@@ -18,6 +18,10 @@
   details.private summary { cursor: pointer; color: var(--text2); padding: 4px 0; }
   details.private[open] summary { margin-bottom: 10px; }
   .pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+  .npc-chip { display: inline-flex; align-items: center; gap: 4px; background: #231d2e; color: #ddd0f0; border-radius: 99px; padding: 4px 4px 4px 12px; }
+  .npc-chip button { min-height: 28px; padding: 4px 9px; border-radius: 99px; background: none; border: 0; color: inherit; }
+  .npc-thread { height: 320px; overflow-y: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; margin-top: 10px; }
+  #npcConsole .composer { border: 0; padding: 8px 0 0; background: none; }
 </style>
 </head>
 <body>
@@ -92,6 +96,28 @@
     </div>
   </details>
 
+  <h2>NPC texts</h2>
+  <div class="card">
+    <div class="row" id="npcList"></div>
+    <form class="row" id="npcForm" style="margin-top:10px">
+      <input type="text" class="grow" id="npcName" maxlength="40" placeholder="New NPC, e.g. Unknown number" aria-label="New NPC name">
+      <button type="submit">Add NPC</button>
+    </form>
+  </div>
+  <div class="card" id="npcConsole" hidden>
+    <div class="row">
+      <div class="grow"><label class="lbl" for="npcFrom">Text as</label><select id="npcFrom"></select></div>
+      <div class="grow"><label class="lbl" for="npcTo">To</label><select id="npcTo"></select></div>
+    </div>
+    <div class="npc-thread" id="npcScroll"><div class="bubbles" id="npcBubbles"></div></div>
+    <div class="typing" id="npcTyping" aria-live="polite"></div>
+    <form class="composer" id="npcComposer">
+      <textarea id="npcText" rows="1" maxlength="1000" enterkeyhint="send" aria-label="NPC message"></textarea>
+      <button class="primary" type="submit">Send</button>
+    </form>
+  </div>
+  <p class="hint" id="npcHint">Add an NPC to text players as someone outside the group. Players can reply; you'll see their replies here, but never their private chats with each other.</p>
+
   <h2>Before you start</h2>
   <div class="card" id="checklist"></div>
 
@@ -103,7 +129,10 @@
   </div>
 
   <h2>Danger</h2>
-  <button class="danger" data-confirm="Wipe everything, including seats, setup and private notes?" data-act="newGame">New game</button>
+  <div class="row">
+    <button class="danger" data-confirm="Delete every message and NPC? Seats and setup are kept." data-act="clearMessages">Clear messages</button>
+    <button class="danger" data-confirm="Wipe everything, including seats, setup, private notes and messages?" data-act="newGame">New game</button>
+  </div>
 </main>
 
 <script src="/vendor/qrcode.js"></script>
@@ -231,6 +260,8 @@ function render(s) {
   // Private
   if (s.secret) for (const [k, v] of Object.entries(s.secret)) if ($(k)) fill($(k), v);
 
+  renderNpcs();
+
   // Checklist
   for (const el of document.querySelectorAll("[data-check]")) fill(el, s.checklist.includes(Number(el.dataset.check)));
 }
@@ -315,6 +346,14 @@ document.addEventListener("click", async (e) => {
       await writeTag(Alice.joinUrl(seat));
     } else if ("release" in t.dataset) {
       if (confirm(`Release seat ${seat}? Whoever holds it will need to join again.`)) await Alice.host("release", { seat });
+    } else if (t.dataset.npcRemove) {
+      if (confirm("Remove this NPC? Messages already sent stay in the transcript.")) await Alice.host("npcRemove", { id: Number(t.dataset.npcRemove) });
+    } else if (t.dataset.npcOpen) {
+      const [from, to] = t.dataset.npcOpen.split(":");
+      $("npcFrom").value = from;
+      $("npcTo").value = to;
+      renderNpcs();
+      renderNpcThread(true);
     } else if (t.dataset.random) {
       const key = t.dataset.random;
       const pool = $(`${key}Pool`).value.split("\n").map((x) => x.trim()).filter(Boolean);
@@ -339,6 +378,167 @@ $("pinForm").addEventListener("submit", async (e) => {
     Alice.toast(err.message);
   }
 });
+
+// ---- NPC texts
+
+const { chat } = Alice;
+const npcTyping = {}; // thread -> { name, until }
+
+const npcThreadKey = () => {
+  const from = $("npcFrom").value;
+  const to = $("npcTo").value;
+  return from && to ? (to === "group" ? "group" : `npc:${from}:${to}`) : null;
+};
+const npcMe = () => ({ npc: Number($("npcFrom").value) });
+
+function renderNpcs() {
+  const s = Alice.state;
+  const npcs = s?.npcs ?? [];
+  $("npcList").innerHTML = npcs.length
+    ? npcs.map((n) => `<span class="npc-chip">${esc(n.name)}<button data-npc-remove="${n.id}" aria-label="Remove ${esc(n.name)}">×</button></span>`).join("")
+    : `<span class="hint" style="margin:0">No NPCs yet.</span>`;
+  $("npcConsole").hidden = !npcs.length;
+  if (!npcs.length) return;
+
+  const fromOpts = npcs.map((n) => `<option value="${n.id}">${esc(n.name)}</option>`).join("");
+  if ($("npcFrom").dataset.opts !== fromOpts) {
+    const keep = $("npcFrom").value;
+    $("npcFrom").innerHTML = fromOpts;
+    $("npcFrom").dataset.opts = fromOpts;
+    if (npcs.some((n) => String(n.id) === keep)) $("npcFrom").value = keep;
+  }
+  const from = Number($("npcFrom").value);
+  const unreadLabel = (thread) => {
+    const n = chat.unread(thread, { npc: from });
+    return n ? ` (${n} new)` : "";
+  };
+  const toOpts =
+    `<option value="group">Group chat${unreadLabel("group")}</option>` +
+    s.seats.map((x) => `<option value="${x.id}">${esc(Alice.seatLabel(x.id))}${unreadLabel(`npc:${from}:${x.id}`)}</option>`).join("");
+  if ($("npcTo").dataset.opts !== toOpts) {
+    const keep = $("npcTo").value || "1";
+    $("npcTo").innerHTML = toOpts;
+    $("npcTo").dataset.opts = toOpts;
+    $("npcTo").value = [...$("npcTo").options].some((o) => o.value === keep) ? keep : "group";
+  }
+  $("npcText").placeholder = `Text as ${chat.npcName(from)}`;
+
+  // Replies waiting in NPC threads other than the one on screen.
+  const waiting = [];
+  for (const n of npcs) {
+    for (const x of s.seats) {
+      const thread = `npc:${n.id}:${x.id}`;
+      const count = chat.unread(thread, { npc: n.id });
+      if (count && thread !== npcThreadKey()) {
+        waiting.push(`<button class="small primary" data-npc-open="${n.id}:${x.id}">${esc(Alice.seatLabel(x.id))} → ${esc(n.name)} (${count})</button>`);
+      }
+    }
+  }
+  $("npcHint").innerHTML = waiting.length
+    ? `<span class="row">New replies: ${waiting.join("")}</span>`
+    : "Players can reply to NPCs. You'll see their replies here, but never their private chats with each other.";
+  renderNpcThread(false);
+}
+
+function renderNpcThread(forceScroll) {
+  const thread = npcThreadKey();
+  if (!thread) return;
+  const el = $("npcScroll");
+  const stick = forceScroll || el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+  const msgs = chat.inThread(thread);
+  $("npcBubbles").innerHTML = msgs.length
+    ? msgs.map((m, i) => {
+        const mine = chat.isFrom(m, npcMe());
+        const prev = msgs[i - 1];
+        const newSender = !prev || JSON.stringify(prev.from) !== JSON.stringify(m.from);
+        return `<div class="bubble-wrap ${mine ? "mine" : m.from.npc ? "npc" : ""} ${newSender ? "gap" : ""}">
+          ${!mine && newSender ? `<span class="from">${esc(chat.senderName(m))}</span>` : ""}
+          <div class="bubble">${esc(m.text)}</div><span class="time">${chat.timeLabel(m)}</span>
+        </div>`;
+      }).join("")
+    : `<p class="empty-thread">No messages yet.</p>`;
+  if (stick) el.scrollTop = el.scrollHeight;
+  const t = npcTyping[thread];
+  $("npcTyping").textContent = t && t.until > Date.now() ? `${t.name} is typing…` : "";
+  if (document.visibilityState === "visible" && chat.unread(thread, npcMe())) {
+    chat.markRead(thread);
+    renderNpcs(); // clear the "(n new)" labels
+  }
+}
+
+$("npcFrom").addEventListener("change", () => {
+  renderNpcs();
+  renderNpcThread(true);
+});
+$("npcTo").addEventListener("change", () => {
+  renderNpcs();
+  renderNpcThread(true);
+});
+
+$("npcForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = $("npcName").value.trim();
+  if (!name) return;
+  try {
+    await Alice.host("npcAdd", { name });
+    $("npcName").value = "";
+  } catch (err) {
+    Alice.toast(err.message);
+  }
+});
+
+let npcTypingSent = 0;
+$("npcText").addEventListener("input", () => {
+  const ta = $("npcText");
+  ta.style.height = "auto";
+  ta.style.height = `${Math.min(ta.scrollHeight, 140)}px`;
+  if (ta.value.trim() && Date.now() - npcTypingSent > 2500) {
+    npcTypingSent = Date.now();
+    Alice.act("typing", { thread: npcThreadKey(), npc: npcMe().npc }).catch(() => {});
+  }
+});
+$("npcText").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    $("npcComposer").requestSubmit();
+  }
+});
+$("npcComposer").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const ta = $("npcText");
+  const text = ta.value.trim();
+  const thread = npcThreadKey();
+  if (!text || !thread) return;
+  ta.value = "";
+  npcTypingSent = 0;
+  try {
+    await Alice.host("send", { thread, text, npc: npcMe().npc });
+    renderNpcThread(true);
+  } catch (err) {
+    ta.value = text;
+    Alice.toast(err.message);
+  }
+});
+
+chat.enable(
+  "facilitator",
+  (msg) => {
+    if (msg) delete npcTyping[msg.thread];
+    renderNpcs();
+  },
+  (t) => {
+    if (!t.from.seat) return; // only players typing are worth showing here
+    npcTyping[t.thread] = { name: Alice.seatLabel(t.from.seat), until: Date.now() + 4000 };
+    renderNpcThread(false);
+  },
+);
+setInterval(() => {
+  const thread = npcThreadKey();
+  if (thread && npcTyping[thread] && npcTyping[thread].until <= Date.now()) {
+    delete npcTyping[thread];
+    renderNpcThread(false);
+  }
+}, 1000);
 
 es = Alice.connect("facilitator", render);
 tick();

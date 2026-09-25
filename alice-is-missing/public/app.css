@@ -92,3 +92,49 @@ label.check input { margin-top: 4px; width: 18px; height: 18px; accent-color: va
 .overlay .big { font: 600 clamp(1.6rem, 7vw, 2.6rem)/1.2 var(--serif); }
 @keyframes pulse { 50% { background: #3d1612; } }
 @media (prefers-reduced-motion: reduce) { .overlay.alert { animation: none; } }
+
+/* ---------------------------------------------------------------- messenger */
+
+.badge {
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--alert); color: #fff;
+  font: 700 .72rem/20px var(--sans); text-align: center; flex-shrink: 0;
+}
+
+.threads { list-style: none; }
+.threads button {
+  width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; background: none; border: 0;
+  border-bottom: 1px solid var(--line); border-radius: 0; padding: 12px 2px; min-height: 64px; font-weight: 400;
+}
+.threads button:hover { background: var(--bg2); border-color: var(--line); }
+.threads .avatar {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--bg3); color: var(--text2); flex-shrink: 0;
+  display: grid; place-items: center; font: 600 1rem var(--serif);
+}
+.threads .avatar.npc { background: #231d2e; color: #b7a3d6; }
+.threads .avatar.group { background: var(--accent-bg); color: var(--accent); }
+.threads .meta { flex: 1; min-width: 0; }
+.threads .name { font-weight: 600; display: block; }
+.threads .preview { color: var(--text3); font-size: .88rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.threads .unread .preview { color: var(--text); }
+
+.bubbles { display: flex; flex-direction: column; gap: 3px; padding: 12px 12px 4px; }
+.bubble-wrap { display: flex; flex-direction: column; align-items: flex-start; max-width: 80%; }
+.bubble-wrap.mine { align-self: flex-end; align-items: flex-end; }
+.bubble-wrap.gap { margin-top: 10px; }
+.bubble-wrap .from { font-size: .72rem; color: var(--text3); margin: 0 10px 2px; }
+.bubble {
+  background: var(--bg3); border-radius: 18px; padding: 8px 13px; white-space: pre-wrap; overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.mine .bubble { background: var(--accent-bg); color: #d7ecf7; border: 1px solid #25506d; }
+.npc .bubble { background: #231d2e; color: #ddd0f0; }
+.bubble-wrap .time { font: .66rem var(--mono); color: var(--text3); margin: 2px 10px 0; }
+.typing { color: var(--text3); font-size: .8rem; padding: 2px 16px 6px; min-height: 1.6em; }
+.empty-thread { color: var(--text3); text-align: center; padding: 40px 16px; }
+
+.composer {
+  display: flex; gap: 8px; align-items: flex-end; padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  border-top: 1px solid var(--line); background: var(--bg);
+}
+.composer textarea { min-height: 42px; max-height: 140px; resize: none; border-radius: 21px; padding: 10px 15px; }
+.composer button { border-radius: 21px; min-height: 42px; }
