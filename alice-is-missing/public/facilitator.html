@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Facilitator · Alice is Missing</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/app.css">
+<style>
+  .clockcard { text-align: center; }
+  .clockcard .timer { margin: 8px 0 14px; }
+  .controls { justify-content: center; }
+  .seat .row + .row, .seat .stack { margin-top: 8px; }
+  .seat .qrbox { max-width: 220px; margin-top: 10px; }
+  .clue-row { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 0; }
+  .clue-row strong { font-family: var(--mono); }
+  details.private summary { cursor: pointer; color: var(--text2); padding: 4px 0; }
+  details.private[open] summary { margin-bottom: 10px; }
+  .pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+</style>
+</head>
+<body>
+<div id="conn" hidden>Reconnecting to the game…</div>
+
+<div id="gate" class="overlay" hidden>
+  <p class="big">Facilitator</p>
+  <form id="pinForm" class="stack" style="width:min(280px,100%)">
+    <input type="password" id="pin" placeholder="PIN" inputmode="numeric" autocomplete="current-password" aria-label="Facilitator PIN">
+    <button class="primary" type="submit">Unlock</button>
+  </form>
+</div>
+
+<main class="wrap">
+  <h1>Facilitator</h1>
+  <p class="sub">Setup, the clock, and who reveals what. Keep this screen to yourself.</p>
+
+  <h2>Clock</h2>
+  <div class="card clockcard">
+    <span class="pill" id="phase"></span>
+    <div class="timer" id="timer">90:00</div>
+    <div class="row controls">
+      <button class="primary" data-act="start" id="startBtn">Start the game</button>
+      <button data-act="pause" id="pauseBtn">Pause</button>
+      <button data-act="resume" id="resumeBtn">Resume</button>
+    </div>
+    <div class="row controls" style="margin-top:8px" id="adjustRow">
+      <button class="small" data-adjust="60">+1 min time left</button>
+      <button class="small" data-adjust="-60">−1 min time left</button>
+      <button class="small" data-confirm="Stop the clock and go back to setup? Seats and setup are kept." data-act="resetClock">Back to setup</button>
+    </div>
+    <p class="hint" id="speedNote" hidden></p>
+    <p class="hint" id="audioNote"></p>
+  </div>
+
+  <h2>Players</h2>
+  <div class="card row">
+    <div class="grow">
+      <label class="lbl" for="seatCount">Players</label>
+      <select id="seatCount" data-setup></select>
+    </div>
+    <label class="check grow"><input type="checkbox" id="silentFalls" data-setup> <span>Silent Falls expansion<br><span class="hint" id="sfAdds"></span></span></label>
+  </div>
+  <div id="seats"></div>
+  <p class="hint" id="nfcHint"></p>
+
+  <h2>Clue cards</h2>
+  <div class="card" id="clues"></div>
+  <p class="hint">Pick who holds each timed Clue card. Their phone buzzes when its minute comes up.</p>
+
+  <h2>Private</h2>
+  <details class="card private" id="private">
+    <summary>Suspect, location and notes — tap to show</summary>
+    <div class="stack">
+      <div>
+        <label class="lbl" for="suspectPool">Suspects in the box (one per line, from your cards)</label>
+        <textarea id="suspectPool" data-secret></textarea>
+      </div>
+      <div class="pick">
+        <div><label class="lbl" for="suspect">Suspect</label><input type="text" id="suspect" data-secret></div>
+        <button data-random="suspect">Random</button>
+      </div>
+      <div>
+        <label class="lbl" for="locationPool">Locations in the box (one per line)</label>
+        <textarea id="locationPool" data-secret></textarea>
+      </div>
+      <div class="pick">
+        <div><label class="lbl" for="location">Location</label><input type="text" id="location" data-secret></div>
+        <button data-random="location">Random</button>
+      </div>
+      <div><label class="lbl" for="notes">Notes</label><textarea id="notes" data-secret></textarea></div>
+    </div>
+  </details>
+
+  <h2>Before you start</h2>
+  <div class="card" id="checklist"></div>
+
+  <h2>Screens</h2>
+  <div class="row">
+    <a class="btn" href="/table" target="_blank">Table screen</a>
+    <a class="btn" href="/qr" target="_blank">Printable QR cards</a>
+    <a class="btn" href="/join" target="_blank">Join page</a>
+  </div>
+
+  <h2>Danger</h2>
+  <button class="danger" data-confirm="Wipe everything, including seats, setup and private notes?" data-act="newGame">New game</button>
+</main>
+
+<script src="/vendor/qrcode.js"></script>
+<script src="/client.js"></script>
+<script>
+const { esc, store, fmt } = Alice;
+const $ = (id) => document.getElementById(id);
+const canWriteNfc = "NDEFReader" in window;
+let es = null;
+let built = false;
+const openQr = new Set();
+
+// Set a field from state without fighting the person typing in it.
+function fill(el, value) {
+  if (document.activeElement === el) return;
+  if (el.type === "checkbox") el.checked = Boolean(value);
+  else if (el.value !== String(value ?? "")) el.value = value ?? "";
+}
+
+function build(s) {
+  $("seatCount").innerHTML = Array.from({ length: s.config.maxSeats - s.config.minSeats + 1 }, (_, i) => {
+    const n = s.config.minSeats + i;
+    return `<option value="${n}">${n} players</option>`;
+  }).join("");
+  $("sfAdds").textContent = s.config.expansions.silentFalls?.adds ?? "";
+
+  $("seats").innerHTML = Array.from({ length: s.config.maxSeats }, (_, i) => {
+    const id = i + 1;
+    return `<div class="card seat" data-seat="${id}">
+      <div class="row"><span class="dot" data-dot></span><strong class="grow">Seat ${id}</strong><span class="pill" data-status></span></div>
+      <div class="row">
+        <div class="grow"><label class="lbl" for="name${id}">Player</label><input type="text" id="name${id}" data-setup data-field="name" maxlength="40"></div>
+        <div class="grow"><label class="lbl" for="char${id}">Character</label><input type="text" id="char${id}" data-setup data-field="character" maxlength="40"></div>
+      </div>
+      <div class="mono hint" data-url></div>
+      <div class="row">
+        <button class="small" data-copy>Copy link</button>
+        <button class="small" data-qr>QR code</button>
+        ${canWriteNfc ? `<button class="small" data-nfc>Write NFC tag</button>` : ""}
+        <button class="small danger" data-release>Release seat</button>
+      </div>
+      <div class="qrbox" data-qrbox hidden></div>
+    </div>`;
+  }).join("");
+
+  $("clues").innerHTML = s.config.intervals
+    .map((m) => `<div class="clue-row" data-interval="${m}">
+      <strong>${m}:00</strong>
+      <select data-setup data-clue="${m}" aria-label="Who holds the ${m}-minute clue"></select>
+      <button class="small" data-reveal="${m}"></button>
+    </div>`)
+    .join("");
+
+  $("checklist").innerHTML = s.config.checklist
+    .map((text, i) => `<label class="check"><input type="checkbox" data-check="${i}"> <span>${esc(text)}</span></label>`)
+    .join("");
+
+  $("nfcHint").textContent = canWriteNfc
+    ? "Write NFC tag: hold a blank NTAG213/215 sticker to the back of this phone after tapping."
+    : "NFC tags: write each seat's link as a URL record with a free app like NFC Tools. Tapping the tag then opens that seat on any phone.";
+  built = true;
+}
+
+function render(s) {
+  $("gate").hidden = !(s.pinRequired && !s.secret);
+  if (!built) build(s);
+  const setupPhase = s.phase === "setup";
+
+  // Clock
+  const phase = $("phase");
+  phase.textContent = Alice.phaseLabel(s.phase);
+  phase.className = `pill ${s.phase === "running" ? "on" : s.phase === "ended" ? "alert" : ""}`;
+  $("startBtn").hidden = !setupPhase;
+  $("pauseBtn").hidden = s.phase !== "running";
+  $("resumeBtn").hidden = s.phase !== "paused";
+  $("adjustRow").hidden = setupPhase;
+  $("speedNote").hidden = s.clock.speed === 1;
+  $("speedNote").textContent = `Debug speed x${s.clock.speed} — the soundtrack stays muted.`;
+  $("audioNote").textContent = !s.soundtrack
+    ? "No soundtrack file on the Pi. The timer still works."
+    : s.tableAudioReady ? "Table screen: soundtrack ready." : "Table screen: sound not enabled yet.";
+
+  // Players
+  fill($("seatCount"), s.seatCount);
+  fill($("silentFalls"), s.silentFalls);
+  for (const el of document.querySelectorAll(".seat")) {
+    const id = Number(el.dataset.seat);
+    const seat = s.seats.find((x) => x.id === id);
+    el.hidden = !seat;
+    if (!seat) continue;
+    fill(el.querySelector('[data-field="name"]'), seat.name);
+    fill(el.querySelector('[data-field="character"]'), seat.character);
+    el.querySelector("[data-dot]").classList.toggle("on", seat.online);
+    const status = el.querySelector("[data-status]");
+    status.textContent = seat.online ? "Connected" : seat.claimed ? "Claimed, offline" : "Open";
+    status.className = `pill ${seat.online ? "on" : ""}`;
+    el.querySelector("[data-release]").disabled = !seat.claimed;
+    el.querySelector("[data-url]").textContent = Alice.joinUrl(id);
+    const box = el.querySelector("[data-qrbox]");
+    box.hidden = !openQr.has(id);
+    if (openQr.has(id) && box.dataset.url !== Alice.joinUrl(id)) {
+      box.dataset.url = Alice.joinUrl(id);
+      box.innerHTML = Alice.qrSvg(Alice.joinUrl(id));
+    }
+  }
+  for (const el of document.querySelectorAll("[data-setup]")) el.disabled = !setupPhase;
+
+  // Clues
+  for (const row of document.querySelectorAll(".clue-row")) {
+    const m = Number(row.dataset.interval);
+    const sel = row.querySelector("select");
+    const opts = `<option value="">— nobody —</option>` + s.seats.map((x) => `<option value="${x.id}">${esc(Alice.seatLabel(x.id))}</option>`).join("");
+    if (sel.dataset.opts !== opts && document.activeElement !== sel) {
+      sel.innerHTML = opts;
+      sel.dataset.opts = opts;
+    }
+    fill(sel, s.clues[m] ?? "");
+    const btn = row.querySelector("[data-reveal]");
+    const revealed = s.revealed.includes(m);
+    btn.textContent = revealed ? "Sent ✓" : s.fired.includes(m) ? "Mark sent" : "Upcoming";
+    btn.disabled = !s.fired.includes(m);
+    btn.className = `small ${s.fired.includes(m) && !revealed ? "primary" : ""}`;
+  }
+
+  // Private
+  if (s.secret) for (const [k, v] of Object.entries(s.secret)) if ($(k)) fill($(k), v);
+
+  // Checklist
+  for (const el of document.querySelectorAll("[data-check]")) fill(el, s.checklist.includes(Number(el.dataset.check)));
+}
+
+function tick() {
+  const s = Alice.state;
+  if (s) {
+    $("timer").textContent = fmt(Alice.remainingMs());
+    $("timer").classList.toggle("paused", s.phase !== "running");
+  }
+  requestAnimationFrame(tick);
+}
+
+// ---- saving
+
+let setupTimer = null;
+function saveSetup() {
+  clearTimeout(setupTimer);
+  setupTimer = setTimeout(() => {
+    const seats = [...document.querySelectorAll(".seat")].map((el) => ({
+      id: Number(el.dataset.seat),
+      name: el.querySelector('[data-field="name"]').value,
+      character: el.querySelector('[data-field="character"]').value,
+    }));
+    const clues = Object.fromEntries([...document.querySelectorAll("[data-clue]")].map((el) => [el.dataset.clue, el.value]));
+    Alice.host("setup", { seatCount: Number($("seatCount").value), silentFalls: $("silentFalls").checked, seats, clues })
+      .catch((err) => Alice.toast(err.message));
+  }, 350);
+}
+
+let secretTimer = null;
+function saveSecret() {
+  clearTimeout(secretTimer);
+  secretTimer = setTimeout(() => {
+    const data = Object.fromEntries([...document.querySelectorAll("[data-secret]")].map((el) => [el.id, el.value]));
+    Alice.host("secret", data).catch((err) => Alice.toast(err.message));
+  }, 350);
+}
+
+document.addEventListener("input", (e) => {
+  if (e.target.matches("[data-setup]")) saveSetup();
+  if (e.target.matches("[data-secret]")) saveSecret();
+});
+document.addEventListener("change", (e) => {
+  if (e.target.matches("[data-check]")) {
+    Alice.host("check", { index: Number(e.target.dataset.check), done: e.target.checked }).catch((err) => Alice.toast(err.message));
+  }
+});
+
+async function writeTag(url) {
+  try {
+    Alice.toast("Hold the tag to the back of the phone…");
+    await new NDEFReader().write({ records: [{ recordType: "url", data: url }] });
+    Alice.toast("Tag written");
+  } catch (err) {
+    Alice.toast(`Couldn't write the tag: ${err.message}`);
+  }
+}
+
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  const seatEl = t.closest(".seat");
+  const seat = seatEl ? Number(seatEl.dataset.seat) : null;
+  try {
+    if (t.dataset.act) {
+      if (t.dataset.confirm && !confirm(t.dataset.confirm)) return;
+      await Alice.host(t.dataset.act);
+      if (t.dataset.act === "newGame") openQr.clear();
+    } else if (t.dataset.adjust) {
+      // "+1 min time left" moves the game back, so the server gets negative seconds.
+      await Alice.host("adjust", { seconds: -Number(t.dataset.adjust) });
+    } else if (t.dataset.reveal) {
+      const m = Number(t.dataset.reveal);
+      await Alice.host("reveal", { interval: m, undo: Alice.state.revealed.includes(m) });
+    } else if ("copy" in t.dataset) {
+      Alice.toast((await Alice.copy(Alice.joinUrl(seat))) ? "Link copied" : "Couldn't copy — select the link above");
+    } else if ("qr" in t.dataset) {
+      openQr.has(seat) ? openQr.delete(seat) : openQr.add(seat);
+      render(Alice.state);
+    } else if ("nfc" in t.dataset) {
+      await writeTag(Alice.joinUrl(seat));
+    } else if ("release" in t.dataset) {
+      if (confirm(`Release seat ${seat}? Whoever holds it will need to join again.`)) await Alice.host("release", { seat });
+    } else if (t.dataset.random) {
+      const key = t.dataset.random;
+      const pool = $(`${key}Pool`).value.split("\n").map((x) => x.trim()).filter(Boolean);
+      if (!pool.length) return Alice.toast("Add some options to the list first");
+      $(key).value = pool[Math.floor(Math.random() * pool.length)];
+      saveSecret();
+    }
+  } catch (err) {
+    Alice.toast(err.message);
+  }
+});
+
+$("pinForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const pin = $("pin").value;
+  try {
+    await Alice.act("auth", { pin });
+    store.set("alice.pin", pin);
+    es?.close();
+    es = Alice.connect("facilitator", render);
+  } catch (err) {
+    Alice.toast(err.message);
+  }
+});
+
+es = Alice.connect("facilitator", render);
+tick();
+</script>
+</body>
+</html>

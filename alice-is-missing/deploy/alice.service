@@ -1,0 +1,20 @@
+# systemd unit for the Alice is Missing assistant.
+# Install: sudo cp deploy/alice.service /etc/systemd/system/ && sudo systemctl enable --now alice
+# Edit User and WorkingDirectory if your username or clone path differ.
+
+[Unit]
+Description=Alice is Missing game assistant
+Wants=network-online.target
+After=network-online.target time-sync.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/Portfolio/alice-is-missing
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+Environment=PORT=8080
+# Environment=ALICE_PIN=1234
+# Environment=PUBLIC_URL=http://alice.local:8080
+
+[Install]
+WantedBy=multi-user.target

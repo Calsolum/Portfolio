@@ -1,0 +1,12 @@
+{
+  "name": "alice-is-missing-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LAN game assistant for Alice is Missing, built to run on a Raspberry Pi",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.js",
+    "fast": "node server.js --speed=60"
+  }
+}
