@@ -61,6 +61,7 @@
 
   <!-- Messages: conversation list -->
   <section class="panel" id="list" role="tabpanel">
+    <button class="strip" id="strip" hidden></button>
     <ul class="threads" id="threads"></ul>
     <p class="hint" style="padding:0 16px 24px">Texts stay on the Pi. Private chats are private until the game ends, then everyone can read the transcript.</p>
   </section>
@@ -85,6 +86,9 @@
       <span class="pill" id="phase"></span>
     </div>
 
+    <h2>Right now</h2>
+    <ul class="card now" id="now"></ul>
+
     <div class="clock"><div class="timer" id="timer">90:00</div></div>
     <p class="next" id="next"></p>
     <p id="transcriptLink" hidden style="text-align:center;margin-top:14px"><a class="btn primary" href="/transcript">Read the full transcript</a></p>
@@ -100,9 +104,27 @@
     </div>
   </section>
 
+  <!-- Rules: the host's own rulebook files, table notes, official links -->
+  <section class="panel pad" id="rulesTab" role="tabpanel" hidden>
+    <h1>Rules</h1>
+    <h2>Rulebook</h2>
+    <div class="card" id="rulesFiles"></div>
+    <h2>Table notes</h2>
+    <div class="card notes" id="tableNotes"></div>
+    <h2>Official</h2>
+    <div class="card">
+      <ul class="rules-list">
+        <li><a href="https://www.aliceismissing.com/" target="_blank" rel="noopener"><span class="kind">web</span><span>aliceismissing.com</span></a></li>
+        <li><a href="https://renegadegamestudios.com/alice-is-missing/" target="_blank" rel="noopener"><span class="kind">web</span><span>Renegade Game Studios</span></a></li>
+      </ul>
+      <p class="hint">These open on the internet. Everything else on this page is served from the Pi.</p>
+    </div>
+  </section>
+
   <nav class="tabbar" id="tabbar" role="tablist">
     <button role="tab" data-tab="messages" aria-selected="true">Messages<span class="badge" id="msgBadge" hidden></span></button>
-    <button role="tab" data-tab="clues" aria-selected="false">Clues<span class="badge" id="clueBadge" hidden>!</span></button>
+    <button role="tab" data-tab="clues" aria-selected="false">Game<span class="badge" id="clueBadge" hidden>!</span></button>
+    <button role="tab" data-tab="rules" aria-selected="false">Rules</button>
   </nav>
 </div>
 
@@ -130,6 +152,7 @@ function show() {
   $("list").hidden = tab !== "messages" || Boolean(openThread);
   $("thread").hidden = !inThread;
   $("cluesTab").hidden = tab !== "clues";
+  $("rulesTab").hidden = tab !== "rules";
   $("tabbar").hidden = Boolean(inThread);
   $("back").hidden = !inThread;
   for (const b of document.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === tab));
@@ -199,9 +222,66 @@ function render(s) {
     }
   }
 
+  // Rules tab
+  $("rulesFiles").innerHTML = s.rules.length
+    ? `<ul class="rules-list">${s.rules
+        .map((r) => `<li><a href="${esc(r.url)}" target="_blank"><span class="kind">${esc(r.kind)}</span><span>${esc(r.title)}</span></a></li>`)
+        .join("")}</ul>`
+    : `<p class="sub">No rulebook on the Pi yet. The host can add their copy to <span class="mono">media/rules/</span>.</p>`;
+  $("tableNotes").textContent = s.tableNotes || "No notes yet.";
+  $("tableNotes").classList.toggle("sub", !s.tableNotes);
+
+  // A new announcement gets a buzz (but not the one already showing when the page loads).
+  if (lastAnnouncement !== undefined && s.announcement && s.announcement !== lastAnnouncement) navigator.vibrate?.([200, 100, 200]);
+  lastAnnouncement = s.announcement;
+
   renderThreads(); // names may have changed
   renderTitle();
+  renderNow();
 }
+
+// ---------------------------------------------------------------- right now
+
+let lastAnnouncement;
+
+function renderNow() {
+  const actions = Alice.nowActions(mySeat());
+  const item = (a) => {
+    const inner = `<span class="mark"></span><span>${esc(a.text)}</span>`;
+    return a.go
+      ? `<li><button class="${a.tone}" data-go="${esc(a.go)}">${inner}</button></li>`
+      : `<li><div class="item ${a.tone}">${inner}</div></li>`;
+  };
+  const html = actions.map(item).join("") || `<li><div class="item plain"><span class="mark"></span><span>Nothing needs you right now.</span></div></li>`;
+  if ($("now").innerHTML !== html) $("now").innerHTML = html;
+
+  // The most important thing, if it's more than background advice, rides above the conversations.
+  const top = actions.find((a) => a.tone !== "plain");
+  const strip = $("strip");
+  strip.hidden = !top;
+  if (top) {
+    strip.textContent = top.text;
+    strip.className = `strip ${top.tone}`;
+    strip.dataset.go = top.go ?? "clues";
+  }
+}
+
+function go(where) {
+  if (where === "transcript") return location.assign("/transcript");
+  if (where.startsWith("thread:")) {
+    tab = "messages";
+    return openConversation(where.slice("thread:".length));
+  }
+  tab = where === "messages" ? "messages" : "clues";
+  openThread = null;
+  show();
+}
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-go]");
+  if (b) go(b.dataset.go);
+});
+setInterval(renderNow, 1000); // the "in 4:12" countdown
 
 // ---------------------------------------------------------------- messages
 
@@ -301,6 +381,7 @@ chat.enable(
     renderTyping();
     if (stick) scrollToEnd();
     renderThreads();
+    renderNow();
   },
   (t) => {
     typingUntil[t.thread] = { name: t.from.seat ? Alice.seatLabel(t.from.seat) : t.from.name, until: Date.now() + 4000 };

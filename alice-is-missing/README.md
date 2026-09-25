@@ -9,8 +9,9 @@ it holds none of the card text, only the structure — which interval is next an
 - **Table screen** (`/table`) — a TV, tablet or laptop. Big countdown, the next clue, a join QR
   code before the game, and the soundtrack.
 - **Player phones** (`/join`) — scan the QR code or tap an NFC tag to take a seat. Text as your
-  character in the group chat or privately. The screen turns red and the phone vibrates when
-  it's your clue's minute.
+  character in the group chat or privately. A *Right now* card says what you should be doing,
+  and the Rules tab holds the rulebook and table notes. The screen turns red and the phone
+  vibrates when it's your clue's minute.
 - **Facilitator** (`/facilitator`) — seats, characters, who holds which clue, private suspect and
   location draws, start/pause/adjust controls, and texting players as NPCs.
 - **Transcript** (`/transcript`) — every message, in order, once the game is over.
@@ -62,6 +63,26 @@ If `alice.local` works on your network, set `PUBLIC_URL=http://alice.local:8080`
 tags. The tags then keep working if the Pi's IP address changes.
 
 If someone switches phones, the facilitator taps *Release seat* and they join again.
+
+## Right now, and the rules
+
+**Right now.** Each phone's Game tab has a short list of what that player should be doing,
+worked out from the game state. It asks for your character during setup and says when you're
+waiting for the start or the game is paused. It shows your next clue and how long until it's
+due, and it flags a clue that's due now. It lists unread messages (tap to jump to the
+conversation), then links the transcript at the end. The most urgent item also sits above the
+conversation list. The facilitator can post a one-line **announcement**, like "five-minute
+break", that tops every phone and shows on the table screen.
+
+**Rules.** The rulebook isn't a free download (it's sold as the book and a PDF at
+[aliceismissing.com](https://www.aliceismissing.com/)), so none of it ships in this repo. To
+make your own copy available at the table, put it in `media/rules/` on the Pi: a PDF, photos of
+the pages (jpg/png/webp), or a text file. Every phone's Rules tab lists them, served from the Pi
+over your network only. Prefix filenames with numbers to set the order
+(`1-core-rules.pdf`, `2-quick-reference.jpg`); dashes and underscores become spaces. The
+facilitator can also type **table notes** (house rules, or a quick reference in your own
+words), which update live on every phone. There are links to the official site too, for when
+the table has internet.
 
 ## Messaging
 

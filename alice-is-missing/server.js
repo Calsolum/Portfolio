@@ -47,6 +47,8 @@ function freshState() {
     checklist: [],
     clock: { startedAt: null, pausedAt: null, pausedTotal: 0 },
     tableAudioReady: false,
+    announcement: "", // short instruction the facilitator pushes to every screen
+    tableNotes: "", // house rules / quick reference, shown on every phone's Rules tab
   };
 }
 
@@ -131,6 +133,23 @@ function lanAddress() {
 
 const joinBase = () => process.env.PUBLIC_URL?.replace(/\/$/, "") ?? `http://${lanAddress()}:${PORT}`;
 
+// Your own rulebook (PDF or photos) dropped in media/rules/, served on the LAN only.
+function rulesFiles() {
+  try {
+    return fs
+      .readdirSync(path.join(MEDIA_DIR, "rules"))
+      .filter((n) => /\.(pdf|png|jpe?g|webp|txt)$/i.test(n))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+      .map((n) => ({
+        title: n.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+        url: `/media/rules/${encodeURIComponent(n)}`,
+        kind: path.extname(n).slice(1).toLowerCase(),
+      }));
+  } catch {
+    return [];
+  }
+}
+
 function soundtrack() {
   try {
     const f = fs.readdirSync(MEDIA_DIR).find((n) => /\.(mp3|m4a|aac|ogg|opus|wav|flac|webm)$/i.test(n));
@@ -160,6 +179,9 @@ function view(client) {
     clock: { ...state.clock, durationMs: DURATION_MS, speed: SPEED, elapsedMs: elapsedMs() },
     tableAudioReady: state.tableAudioReady,
     soundtrack: soundtrack(),
+    rules: rulesFiles(),
+    announcement: state.announcement,
+    tableNotes: state.tableNotes,
     joinBase: joinBase(),
     pinRequired: Boolean(PIN),
     config: {
@@ -224,7 +246,7 @@ class HttpError extends Error {
 
 const facilitatorOnly = new Set([
   "setup", "secret", "release", "start", "pause", "resume", "adjust", "resetClock", "newGame", "check",
-  "npcAdd", "npcRemove", "clearMessages",
+  "npcAdd", "npcRemove", "clearMessages", "notes",
 ]);
 
 function act(body) {
@@ -296,6 +318,10 @@ function act(body) {
       }
       break;
     }
+    case "notes":
+      if ("announcement" in body) state.announcement = clampText(body.announcement, 280);
+      if ("tableNotes" in body) state.tableNotes = String(body.tableNotes ?? "").slice(0, 8000);
+      break;
     case "secret": {
       for (const k of Object.keys(state.secret)) {
         if (k in body) state.secret[k] = clampText(body[k], k.endsWith("Pool") || k === "notes" ? 2000 : 60);
@@ -386,6 +412,11 @@ const TYPES = {
   ".json": "application/json",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".pdf": "application/pdf",
+  ".txt": "text/plain; charset=utf-8",
   ".mp3": "audio/mpeg",
   ".m4a": "audio/mp4",
   ".aac": "audio/aac",
