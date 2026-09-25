@@ -263,6 +263,51 @@ const Alice = {
     return seat ? `${base}/join?seat=${seat}` : `${base}/join`;
   },
 
+  // What this seat should be doing right now, most urgent first.
+  // Each item: { tone: "alert" | "accent" | "plain", text, go? } where go names a place to jump to.
+  nowActions(seat) {
+    const s = Alice.state;
+    if (!s || !seat) return [];
+    const out = [];
+    const self = s.seats.find((x) => x.id === seat);
+    if (s.announcement) out.push({ tone: "accent", text: `From the facilitator: ${s.announcement}` });
+
+    if (s.phase === "ended") {
+      out.push({ tone: "accent", text: "Time's up. Every conversation is unlocked, so read the transcript together.", go: "transcript" });
+      return out;
+    }
+
+    const due = Alice.dueIntervals().filter((m) => s.clues[m] === seat);
+    for (const m of due) out.push({ tone: "alert", text: `Reveal your ${m}-minute clue now.`, go: "clues" });
+
+    const me = { seat };
+    const unread = Alice.chat.threadsFor(seat).filter((t) => Alice.chat.unread(t, me));
+    if (unread.length) {
+      const n = unread.reduce((sum, t) => sum + Alice.chat.unread(t, me), 0);
+      const where = unread.map((t) => Alice.chat.threadName(t, seat)).join(", ");
+      out.push({ tone: "accent", text: `${n} unread in ${where}.`, go: unread.length === 1 ? `thread:${unread[0]}` : "messages" });
+    }
+
+    if (s.phase === "setup") {
+      if (!self?.character) out.push({ tone: "plain", text: "Tell the facilitator which character you're playing." });
+      out.push({ tone: "plain", text: "Waiting for the facilitator to start the clock." });
+      out.push({ tone: "plain", text: "Keep this page open and turn off your phone's auto-lock for the game." });
+      return out;
+    }
+
+    if (s.phase === "paused") out.push({ tone: "accent", text: "The game is paused." });
+
+    const myNext = s.config.intervals.find((m) => s.clues[m] === seat && !s.fired.includes(m));
+    if (myNext != null) {
+      const wait = Alice.remainingMs() - myNext * 60_000;
+      out.push({ tone: "plain", text: `Your next clue is at ${myNext}:00, in ${Alice.fmt(wait)}.`, go: "clues" });
+    } else if (!due.length && s.config.intervals.some((m) => s.clues[m] === seat)) {
+      out.push({ tone: "plain", text: "You've revealed all your clues." });
+    }
+    if (s.phase === "running") out.push({ tone: "plain", text: "Stay silent. Everything happens by text." });
+    return out;
+  },
+
   phaseLabel(phase) {
     return { setup: "Setting up", running: "In play", paused: "Paused", ended: "Time's up" }[phase] || phase;
   },
