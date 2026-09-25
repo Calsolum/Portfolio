@@ -258,6 +258,30 @@ export const projects: Project[] = [
     app: "/apps/tragedy-looper.html",
     readable: true,
   },
+  {
+    slug: "alice-is-missing",
+    title: "Alice is Missing Table Assistant",
+    category: "projects",
+    kind: "Game Assistant · Raspberry Pi",
+    blurb:
+      "A LAN companion for the silent roleplaying game, hosted on a Raspberry Pi. A shared table screen keeps the 90-minute clock and soundtrack in sync, players join by QR code or NFC tag, and each phone buzzes when its timed clue is due.",
+    stack: "Node.js · Server-Sent Events · Vanilla HTML · CSS · JavaScript · No dependencies",
+    tags: ["Node.js", "Raspberry Pi", "Real-time"],
+    // Needs its LAN server, so the source is the thing to link to.
+    links: [
+      {
+        label: "View source on GitHub",
+        href: "https://github.com/calsolum/portfolio/tree/portfolio/alice-is-missing",
+      },
+    ],
+    image: {
+      src: "/images/alice-is-missing.png",
+      alt: "The table screen mid-game: a large 79:31 countdown, the next clue at 70:00, and a red badge showing the 80-minute clue is out.",
+      width: 1280,
+      height: 800,
+    },
+    readable: true,
+  },
 ];
 
 export const stats = [
@@ -267,7 +291,7 @@ export const stats = [
   { value: "1", label: "Novella" },
   { value: "1", label: "Stage Adaptation" },
   { value: "1", label: "Film Script" },
-  { value: "3", label: "Projects" },
+  { value: "4", label: "Projects" },
 ];
 
 export interface ExperienceEntry {
