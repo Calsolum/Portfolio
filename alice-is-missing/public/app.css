@@ -68,7 +68,12 @@ label.check input { margin-top: 4px; width: 18px; height: 18px; accent-color: va
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); display: inline-block; flex-shrink: 0; }
 .dot.on { background: var(--ok); }
 
-.timer { font: 300 clamp(3.2rem, 18vw, 6rem)/1 var(--mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+/* Fixed font-size first, then a clamp() override: an engine that can't
+   parse clamp() drops the WHOLE font: shorthand it appears in rather than
+   just that value, so a plain fallback has to be a separate declaration a
+   modern browser then overrides via normal cascade order (see table.html's
+   own stylesheet for the same pattern, needed for the same TV browser). */
+.timer { font-family: var(--mono); font-weight: 300; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; font-size: 4rem; font-size: clamp(3.2rem, 18vw, 6rem); }
 .timer.paused { color: var(--text3); }
 
 .qr { display: block; width: 100%; height: auto; border-radius: 8px; image-rendering: pixelated; }
@@ -89,7 +94,7 @@ label.check input { margin-top: 4px; width: 18px; height: 18px; accent-color: va
   gap: 20px; padding: 24px; text-align: center; background: rgba(11, 14, 20, .96);
 }
 .overlay.alert { background: var(--alert-bg); animation: pulse 1.6s ease-in-out infinite; }
-.overlay .big { font: 600 clamp(1.6rem, 7vw, 2.6rem)/1.2 var(--serif); }
+.overlay .big { font-family: var(--serif); font-weight: 600; line-height: 1.2; font-size: 1.8rem; font-size: clamp(1.6rem, 7vw, 2.6rem); }
 @keyframes pulse { 50% { background: #3d1612; } }
 @media (prefers-reduced-motion: reduce) { .overlay.alert { animation: none; } }
 
