@@ -478,7 +478,12 @@ function serveFile(req, res, file) {
     "content-type": type,
     "content-length": stat.size,
     "accept-ranges": "bytes",
-    "cache-control": "no-cache",
+    // no-store, not no-cache: no-cache still permits reuse after a
+    // revalidation round-trip, and we send no ETag/Last-Modified for it to
+    // revalidate against - some browsers (confirmed: this app's target
+    // Smart TVs) just serve the stale copy in that gap instead. This is a
+    // small LAN party app, not something that benefits from caching.
+    "cache-control": "no-store",
   });
   if (req.method === "HEAD") return res.end();
   fs.createReadStream(file).on("error", () => res.destroy()).pipe(res);
