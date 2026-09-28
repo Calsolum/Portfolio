@@ -281,7 +281,7 @@ document.getElementById("enable").onclick = async () => {
     try {
       await audio.play();
       audio.pause();
-    } catch {
+    } catch (e) {
       /* unlocking failed; syncAudio will retry */
     }
     if (audio.readyState >= 3) reportAudio(true);
@@ -294,7 +294,7 @@ document.getElementById("enable").onclick = async () => {
     try {
       if (yt) yt.playVideo();
       setTimeout(() => { if (yt) yt.pauseVideo(); }, 150);
-    } catch {
+    } catch (e) {
       /* unlocking failed; syncAudio will retry */
     }
   }
