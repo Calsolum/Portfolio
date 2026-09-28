@@ -316,7 +316,7 @@ const Alice = {
 
     const myNext = s.config.intervals.find((m) => s.clues[m] === seat && !s.fired.includes(m));
     if (myNext != null) {
-      const wait = Alice.remainingMs() - myNext * 60_000;
+      const wait = Alice.remainingMs() - myNext * 60000;
       out.push({ tone: "plain", text: `Your next clue is at ${myNext}:00, in ${Alice.fmt(wait)}.`, go: "clues" });
     } else if (!due.length && s.config.intervals.some((m) => s.clues[m] === seat)) {
       out.push({ tone: "plain", text: "You've revealed all your clues." });
