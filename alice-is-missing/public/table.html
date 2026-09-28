@@ -155,7 +155,7 @@ function render(s) {
 function syncAudio() {
   const s = Alice.state;
   const label = document.getElementById("audioState");
-  const usingYt = Boolean(s?.youtubeId);
+  const usingYt = Boolean(s && s.youtubeId);
   if (!s || !soundOn || (!s.soundtrack && !usingYt)) {
     label.textContent = "No sound";
     return;
@@ -226,7 +226,7 @@ document.getElementById("enable").onclick = async () => {
   soundOn = true;
   document.getElementById("soundGate").hidden = true;
   Alice.wakeLock();
-  document.documentElement.requestFullscreen?.().catch(() => {});
+  if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
   // Play-then-pause inside the tap unlocks audio for later, unprompted playback.
   if (audio.src) {
     try {
@@ -243,8 +243,8 @@ document.getElementById("enable").onclick = async () => {
     // Same play-then-pause trick, once the player exists.
     for (let i = 0; i < 20 && !yt; i++) await new Promise((r) => setTimeout(r, 100));
     try {
-      yt?.playVideo();
-      setTimeout(() => yt?.pauseVideo(), 150);
+      if (yt) yt.playVideo();
+      setTimeout(() => { if (yt) yt.pauseVideo(); }, 150);
     } catch {
       /* unlocking failed; syncAudio will retry */
     }

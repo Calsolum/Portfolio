@@ -1,5 +1,10 @@
 // Shared browser helpers: live state over SSE, the synced clock, actions, QR codes.
 /* global qrcode */
+// Deliberately avoids optional chaining (?.), nullish coalescing (??), and
+// Array#at() - some Smart TV browsers (older Tizen/webOS engines especially)
+// fail to parse those and silently refuse to run the whole file, which
+// breaks every page that depends on it. Explicit && / ternary checks below
+// do the exact same thing on every engine.
 
 (() => {
 const store = {
@@ -19,6 +24,11 @@ const store = {
     }
   },
 };
+
+// Last element of an array, or undefined - stand-in for Array#at(-1).
+function last(arr) {
+  return arr.length ? arr[arr.length - 1] : undefined;
+}
 
 const Alice = {
   store,
@@ -44,7 +54,7 @@ const Alice = {
       onState(Alice.state);
     });
     es.addEventListener("message", (e) => Alice.chat.add(JSON.parse(e.data)));
-    es.addEventListener("typing", (e) => Alice.chat.onTyping?.(JSON.parse(e.data)));
+    es.addEventListener("typing", (e) => { if (Alice.chat.onTyping) Alice.chat.onTyping(JSON.parse(e.data)); });
     // After any reconnect (a phone waking up), catch up on what was missed.
     es.addEventListener("open", () => Alice.chat.role && Alice.chat.load());
     es.onerror = () => {
@@ -81,8 +91,8 @@ const Alice = {
         .then((body) => {
           chat.epoch = body.epoch;
           chat.messages = body.messages;
-          chat.endedAtLoad = Alice.state?.phase === "ended";
-          chat.onChange?.(null);
+          chat.endedAtLoad = Boolean(Alice.state && Alice.state.phase === "ended");
+          if (chat.onChange) chat.onChange(null);
         })
         .catch(() => {})
         .finally(() => {
@@ -95,7 +105,7 @@ const Alice = {
       const chat = Alice.chat;
       if (chat.messages.some((m) => m.id === msg.id)) return;
       chat.messages.push(msg);
-      chat.onChange?.(msg);
+      if (chat.onChange) chat.onChange(msg);
     },
 
     inThread(thread) {
@@ -112,17 +122,19 @@ const Alice = {
     },
 
     markRead(thread) {
-      const last = Alice.chat.inThread(thread).at(-1);
-      if (!last) return;
+      const lastMsg = last(Alice.chat.inThread(thread));
+      if (!lastMsg) return;
       const marks = Alice.chat.readMarks();
-      if ((marks[thread] ?? 0) >= last.id) return;
-      marks[thread] = last.id;
+      const markedAt = marks[thread] != null ? marks[thread] : 0;
+      if (markedAt >= lastMsg.id) return;
+      marks[thread] = lastMsg.id;
       store.set(`alice.read.${Alice.chat.epoch}`, JSON.stringify(marks));
     },
 
     // Unread messages in a thread that someone else sent. `me` is { seat } or { npc }.
     unread(thread, me = {}) {
-      const seen = Alice.chat.readMarks()[thread] ?? 0;
+      const marks = Alice.chat.readMarks();
+      const seen = marks[thread] != null ? marks[thread] : 0;
       return Alice.chat.inThread(thread).filter((m) => m.id > seen && !Alice.chat.isFrom(m, me)).length;
     },
 
@@ -135,7 +147,8 @@ const Alice = {
     },
 
     npcName(id) {
-      const live = Alice.state?.npcs?.find((n) => n.id === id);
+      const npcs = Alice.state && Alice.state.npcs;
+      const live = npcs ? npcs.find((n) => n.id === id) : undefined;
       if (live) return live.name;
       const sent = Alice.chat.messages.find((m) => m.from.npc === id);
       return sent ? sent.from.name : "Unknown number";
@@ -168,9 +181,13 @@ const Alice = {
     threadsFor(mySeat) {
       const s = Alice.state;
       const keys = ["group"];
-      for (const x of s?.seats ?? []) if (x.id !== mySeat) keys.push(Alice.chat.dmKey(mySeat, x.id));
+      const seats = (s && s.seats) || [];
+      for (const x of seats) if (x.id !== mySeat) keys.push(Alice.chat.dmKey(mySeat, x.id));
       for (const m of Alice.chat.messages) if (!keys.includes(m.thread)) keys.push(m.thread);
-      const lastId = (k) => Alice.chat.inThread(k).at(-1)?.id ?? 0;
+      const lastId = (k) => {
+        const m = last(Alice.chat.inThread(k));
+        return m && m.id != null ? m.id : 0;
+      };
       return keys
         .map((key, order) => ({ key, order, last: lastId(key) }))
         .sort((a, b) => b.last - a.last || a.order - b.order)
@@ -179,7 +196,7 @@ const Alice = {
 
     // Where the message fell on the game clock, as the countdown showed it.
     timeLabel(msg) {
-      const d = Alice.state?.clock.durationMs ?? 0;
+      const d = Alice.state ? Alice.state.clock.durationMs : 0;
       return Alice.fmt(d - msg.gameMs);
     },
   },
@@ -247,19 +264,19 @@ const Alice = {
   },
 
   seatLabel(id) {
-    const seat = Alice.state?.seats.find((x) => x.id === id);
+    const seat = Alice.state ? Alice.state.seats.find((x) => x.id === id) : undefined;
     if (!seat) return `Seat ${id}`;
     return seat.character || seat.name || `Seat ${id}`;
   },
 
   // Who reveals the clue at a given interval, for display.
   holderLabel(interval) {
-    const id = Alice.state?.clues[interval];
+    const id = Alice.state ? Alice.state.clues[interval] : undefined;
     return id ? Alice.seatLabel(id) : "no one assigned";
   },
 
   joinUrl(seat) {
-    const base = Alice.state?.joinBase || location.origin;
+    const base = (Alice.state && Alice.state.joinBase) || location.origin;
     return seat ? `${base}/join?seat=${seat}` : `${base}/join`;
   },
 
@@ -289,7 +306,7 @@ const Alice = {
     }
 
     if (s.phase === "setup") {
-      if (!self?.character) out.push({ tone: "plain", text: "Tell the facilitator which character you're playing." });
+      if (!(self && self.character)) out.push({ tone: "plain", text: "Tell the facilitator which character you're playing." });
       out.push({ tone: "plain", text: "Waiting for the facilitator to start the clock." });
       out.push({ tone: "plain", text: "Keep this page open and turn off your phone's auto-lock for the game." });
       return out;
@@ -346,7 +363,7 @@ const Alice = {
   },
 
   esc(v) {
-    return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    return String(v != null ? v : "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   },
 
   // Keep the screen awake during play, where the browser allows it.
