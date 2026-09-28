@@ -16,17 +16,24 @@
   .stage.lobby { grid-template-columns: minmax(0, 1fr) minmax(0, 360px); align-items: center; }
   @media (max-width: 760px) { .stage.lobby { grid-template-columns: minmax(0, 1fr); } }
   .main { text-align: center; }
-  .title { font: 600 clamp(1.2rem, 3vw, 1.8rem) var(--serif); color: var(--text2); letter-spacing: .04em; }
-  .table-timer { font: 200 clamp(5rem, 24vw, 16rem)/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.03em; margin: 12px 0; }
+  /* Every clamp()'d font rule below repeats as: a plain fixed font-size
+     first (this TV's browser is old enough to not parse clamp() at all -
+     when that happens the WHOLE `font:` shorthand is invalid and dropped,
+     not just the size, which is why text was falling back to a tiny
+     browser default), then a second font-size: clamp(...) declaration
+     that a modern browser applies on top via normal cascade order, and
+     an old one simply can't parse and ignores, leaving the fixed value. */
+  .title { font-family: var(--serif); font-weight: 600; letter-spacing: .04em; color: var(--text2); font-size: 1.5rem; font-size: clamp(1.2rem, 3vw, 1.8rem); }
+  .table-timer { font-family: var(--mono); font-weight: 200; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.03em; margin: 12px 0; font-size: 9rem; font-size: clamp(5rem, 24vw, 16rem); }
   .table-timer.paused { color: var(--text3); }
-  .next { font-size: clamp(1rem, 2.4vw, 1.5rem); color: var(--text2); }
+  .next { color: var(--text2); font-size: 1.2rem; font-size: clamp(1rem, 2.4vw, 1.5rem); }
   .due { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
-  .due .pill { font-size: clamp(.8rem, 1.6vw, 1rem); padding: 10px 14px; }
+  .due .pill { padding: 10px 14px; font-size: .9rem; font-size: clamp(.8rem, 1.6vw, 1rem); }
   .join { text-align: center; }
   .join .qr { max-width: 320px; margin: 0 auto 12px; }
   .roster { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; margin-top: 16px; color: var(--text2); }
   .roster span { display: inline-flex; align-items: center; gap: 6px; }
-  .announce { margin: 24px auto 0; max-width: 42rem; font: 500 clamp(1rem, 2.4vw, 1.6rem)/1.35 var(--serif); color: var(--accent); }
+  .announce { margin: 24px auto 0; max-width: 42rem; font-family: var(--serif); font-weight: 500; line-height: 1.35; color: var(--accent); font-size: 1.3rem; font-size: clamp(1rem, 2.4vw, 1.6rem); }
   .bar { position: fixed; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); display: flex; gap: 8px; opacity: .55; }
   .bar:hover, .bar:focus-within { opacity: 1; }
 </style>
@@ -117,106 +124,11 @@
 })();
 </script>
 
-<!-- TEMPORARY diagnostic, remove once the TV compatibility issue is found.
-     Plain ES5 like the script above. Uses eval() to test each modern-JS
-     feature at RUNTIME (inside its own try/catch), so a SyntaxError from an
-     unsupported feature can't abort this script the way it aborts client.js -
-     eval's parse failure only throws when that eval() call runs, not when
-     this file is parsed. Prints a pass/fail line across the top of the page. -->
-<script>
-(function () {
-  function supports(code) {
-    try { return eval(code) !== false; }
-    catch (e) { return false; }
-  }
-  var checks = [
-    ["arrow", "(function(){return eval('(x=>x)(1)')===1;})()"],
-    ["let", "(function(){eval('let z=1;');return true;})()"],
-    ["const", "(function(){eval('const z=1;');return true;})()"],
-    ["template", "(function(){eval('var z=`a${1}b`;');return true;})()"],
-    ["destructure", "(function(){eval('var {a}={a:1};');return true;})()"],
-    ["class", "(function(){eval('class A{}');return true;})()"],
-    ["spread", "(function(){eval('var z=[...[1,2]];');return true;})()"],
-    ["forof", "(function(){eval('for (var x of [1]) {}');return true;})()"],
-    ["asyncfn", "(function(){eval('(async function(){})');return true;})()"],
-    ["promise", "typeof Promise !== 'undefined'"],
-    ["fetch", "typeof fetch !== 'undefined'"],
-    ["eventsource", "typeof EventSource !== 'undefined'"],
-    ["padstart", "typeof String.prototype.padStart === 'function'"],
-    ["arrayfrom", "typeof Array.from === 'function'"],
-    ["objectassign", "typeof Object.assign === 'function'"],
-    ["catchbinding", "(function(){eval('try{throw 1}catch{}');return true;})()"],
-  ];
-  var out = [];
-  for (var i = 0; i < checks.length; i++) {
-    out.push(checks[i][0] + ":" + (supports(checks[i][1]) ? "Y" : "N"));
-  }
-  var div = document.createElement("div");
-  div.id = "jsDiag";
-  div.style.position = "fixed";
-  div.style.top = "0";
-  div.style.left = "0";
-  div.style.right = "0";
-  div.style.background = "#000";
-  div.style.color = "#0f0";
-  div.style.font = "14px monospace";
-  div.style.padding = "4px";
-  div.style.zIndex = "99999";
-  div.style.whiteSpace = "normal";
-  // BUILD_TAG: bump this string on every deploy of this file so a photo of
-  // the screen proves whether the browser is actually running the latest
-  // version or serving a stale cached copy.
-  div.textContent = "BUILD 2026-09-28-e | " + out.join("  ");
-  document.body.appendChild(div);
-
-  // Catch whatever actually throws at runtime (e.g. inside client.js or the
-  // main inline script below) and print it here too, instead of it silently
-  // stopping that script with nothing visible on screen.
-  var errDiv = document.createElement("div");
-  errDiv.id = "jsErr";
-  errDiv.style.position = "fixed";
-  errDiv.style.top = "22px";
-  errDiv.style.left = "0";
-  errDiv.style.right = "0";
-  errDiv.style.background = "#400";
-  errDiv.style.color = "#fff";
-  errDiv.style.font = "13px monospace";
-  errDiv.style.padding = "4px";
-  errDiv.style.zIndex = "99999";
-  errDiv.style.whiteSpace = "pre-wrap";
-  errDiv.textContent = "(no JS errors yet)";
-  document.body.appendChild(errDiv);
-  window.addEventListener("error", function (e) {
-    errDiv.textContent = "ERROR: " + e.message + " @ " + e.filename + ":" + e.lineno;
-  });
-
-  // Also report, after a few seconds, whether the live game state ever
-  // arrived over EventSource at all - tells us if the connection itself
-  // is the problem versus something failing after it connects.
-  setTimeout(function () {
-    var got = !!(window.Alice && window.Alice.state);
-    var note = document.createElement("div");
-    note.id = "jsState";
-    note.style.position = "fixed";
-    note.style.top = "44px";
-    note.style.left = "0";
-    note.style.right = "0";
-    note.style.background = got ? "#043" : "#440";
-    note.style.color = "#fff";
-    note.style.font = "13px monospace";
-    note.style.padding = "4px";
-    note.style.zIndex = "99999";
-    note.textContent = "Alice.state after 4s: " + (got ? "RECEIVED" : "still null (no state pushed yet)");
-    document.body.appendChild(note);
-  }, 4000);
-})();
-</script>
-
 <!-- ?v= busts any cache that ignores the no-store header outright (confirmed
-     necessary: this app's target Smart TV browser). Bump alongside BUILD_TAG
-     above whenever client.js changes. -->
-<script src="/vendor/qrcode.js?v=2026-09-28-e"></script>
-<script src="/client.js?v=2026-09-28-e"></script>
+     necessary: this app's target Smart TV browser). Bump whenever client.js
+     or this file's own inline script changes. -->
+<script src="/vendor/qrcode.js?v=2026-09-28-f"></script>
+<script src="/client.js?v=2026-09-28-f"></script>
 <script>
 const { esc, fmt } = Alice;
 const audio = document.getElementById("audio");
@@ -324,6 +236,13 @@ function syncAudio() {
   label.textContent = "Playing";
 }
 
+// Re-checking drift every second and re-seeking on >1.5s of it (as the local
+// <audio> path does) made the embedded YouTube player choppy on this app's
+// target Smart TVs: each getCurrentTime()/seekTo() call is a postMessage
+// round-trip into the iframe, and firing that constantly caused audible
+// stutter. A background soundtrack doesn't need second-level precision, so
+// this only checks/corrects drift every 5s, and only past a looser 4s.
+let lastYtSyncAt = 0;
 function syncYoutube(s, label) {
   if (!yt || typeof yt.getPlayerState !== "function") {
     label.textContent = "Loading sound";
@@ -340,9 +259,13 @@ function syncYoutube(s, label) {
     label.textContent = "Sound ready";
     return;
   }
-  const target = Alice.elapsedMs() / 1000 + s.config.audioOffsetSeconds;
-  if (Math.abs(yt.getCurrentTime() - target) > 1.5) yt.seekTo(target, true);
   if (yt.getPlayerState() !== YTSTATE.PLAYING) yt.playVideo();
+  const now = performance.now();
+  if (now - lastYtSyncAt > 5000) {
+    lastYtSyncAt = now;
+    const target = Alice.elapsedMs() / 1000 + s.config.audioOffsetSeconds;
+    if (Math.abs(yt.getCurrentTime() - target) > 4) yt.seekTo(target, true);
+  }
   label.textContent = "Playing";
 }
 
