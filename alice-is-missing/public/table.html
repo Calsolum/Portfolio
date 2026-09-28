@@ -24,7 +24,7 @@
      that a modern browser applies on top via normal cascade order, and
      an old one simply can't parse and ignores, leaving the fixed value. */
   .title { font-family: var(--serif); font-weight: 600; letter-spacing: .04em; color: var(--text2); font-size: 1.5rem; font-size: clamp(1.2rem, 3vw, 1.8rem); }
-  .table-timer { font-family: var(--mono); font-weight: 200; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.03em; margin: 12px 0; font-size: 9rem; font-size: clamp(5rem, 24vw, 16rem); }
+  .table-timer { font-family: var(--mono); font-weight: 200; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.03em; margin: 12px 0; font-size: 16rem; font-size: clamp(5rem, 24vw, 16rem); }
   .table-timer.paused { color: var(--text3); }
   .next { color: var(--text2); font-size: 1.2rem; font-size: clamp(1rem, 2.4vw, 1.5rem); }
   .due { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
@@ -127,8 +127,8 @@
 <!-- ?v= busts any cache that ignores the no-store header outright (confirmed
      necessary: this app's target Smart TV browser). Bump whenever client.js
      or this file's own inline script changes. -->
-<script src="/vendor/qrcode.js?v=2026-09-28-f"></script>
-<script src="/client.js?v=2026-09-28-f"></script>
+<script src="/vendor/qrcode.js?v=2026-09-28-g"></script>
+<script src="/client.js?v=2026-09-28-g"></script>
 <script>
 const { esc, fmt } = Alice;
 const audio = document.getElementById("audio");
@@ -156,7 +156,14 @@ function maybeCreateYtPlayer() {
     videoId: ytVideoId,
     playerVars: { controls: 0, disablekb: 1, modestbranding: 1, playsinline: 1 },
     events: {
-      onReady: () => soundOn && reportAudio(true),
+      // Audio only ever needs to come out of this, so ask for the lowest
+      // video quality available - decoding a bigger picture than a hidden
+      // 1x1 host will ever show was extra CPU work this TV doesn't have to
+      // spare, and that contention was part of the audio stutter.
+      onReady: () => {
+        try { yt.setPlaybackQuality("tiny"); } catch (e) {}
+        if (soundOn) reportAudio(true);
+      },
       onError: () => reportAudio(false),
     },
   });
@@ -238,10 +245,13 @@ function syncAudio() {
 
 // Re-checking drift every second and re-seeking on >1.5s of it (as the local
 // <audio> path does) made the embedded YouTube player choppy on this app's
-// target Smart TVs: each getCurrentTime()/seekTo() call is a postMessage
-// round-trip into the iframe, and firing that constantly caused audible
-// stutter. A background soundtrack doesn't need second-level precision, so
-// this only checks/corrects drift every 5s, and only past a looser 4s.
+// target Smart TVs: every command sent into the iframe (play/seek included)
+// is a postMessage round-trip, and firing that constantly caused audible
+// stutter - including re-issuing playVideo() while the player was merely
+// buffering for a moment, which isn't the same as it having actually
+// stopped. A background soundtrack doesn't need this checked often, so both
+// the play nudge and the drift correction are throttled separately below.
+let lastYtPlayAt = 0;
 let lastYtSyncAt = 0;
 function syncYoutube(s, label) {
   if (!yt || typeof yt.getPlayerState !== "function") {
@@ -259,8 +269,11 @@ function syncYoutube(s, label) {
     label.textContent = "Sound ready";
     return;
   }
-  if (yt.getPlayerState() !== YTSTATE.PLAYING) yt.playVideo();
   const now = performance.now();
+  if (yt.getPlayerState() !== YTSTATE.PLAYING && now - lastYtPlayAt > 3000) {
+    lastYtPlayAt = now;
+    yt.playVideo();
+  }
   if (now - lastYtSyncAt > 5000) {
     lastYtSyncAt = now;
     const target = Alice.elapsedMs() / 1000 + s.config.audioOffsetSeconds;
