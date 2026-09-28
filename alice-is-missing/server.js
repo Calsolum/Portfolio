@@ -22,6 +22,11 @@ const PORT = Number(arg("port") ?? process.env.PORT ?? 8080);
 const SPEED = Number(arg("speed") ?? process.env.ALICE_SPEED ?? 1) || 1;
 // Optional PIN for facilitator actions. Unset means anyone on the LAN can run the game.
 const PIN = process.env.ALICE_PIN ?? "";
+// Optional fallback when no local audio file is in media/: a YouTube video id
+// (the part after v= in the URL) streamed via YouTube's own embedded player,
+// muted/paused/seeked in sync with the clock. Nothing is downloaded - a local
+// file in media/ always takes priority over this if both are set.
+const YOUTUBE_ID = process.env.ALICE_YOUTUBE_ID ?? "";
 
 const config = JSON.parse(fs.readFileSync(path.join(ROOT, "game.config.json"), "utf8"));
 const DURATION_MS = config.durationMinutes * 60_000;
@@ -179,6 +184,7 @@ function view(client) {
     clock: { ...state.clock, durationMs: DURATION_MS, speed: SPEED, elapsedMs: elapsedMs() },
     tableAudioReady: state.tableAudioReady,
     soundtrack: soundtrack(),
+    youtubeId: soundtrack() ? null : YOUTUBE_ID || null,
     rules: rulesFiles(),
     announcement: state.announcement,
     tableNotes: state.tableNotes,
@@ -586,5 +592,6 @@ server.listen(PORT, () => {
   console.log(`  table view:  ${joinBase()}/table`);
   console.log(`  facilitator: ${joinBase()}/facilitator${PIN ? " (PIN set)" : ""}`);
   if (SPEED !== 1) console.log(`  debug speed: x${SPEED}`);
-  if (!soundtrack()) console.log(`  no soundtrack yet - drop an audio file in ${MEDIA_DIR}`);
+  if (!soundtrack() && !YOUTUBE_ID) console.log(`  no soundtrack yet - drop an audio file in ${MEDIA_DIR}, or set ALICE_YOUTUBE_ID`);
+  else if (!soundtrack() && YOUTUBE_ID) console.log(`  soundtrack: streaming YouTube video ${YOUTUBE_ID} (no local file in ${MEDIA_DIR})`);
 });

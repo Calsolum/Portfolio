@@ -64,6 +64,9 @@
 </div>
 
 <audio id="audio" preload="auto"></audio>
+<!-- Audio-only: 1x1 and off-screen rather than display:none, which some
+     browsers use as a cue to fully suspend an iframe's playback. -->
+<div id="ytHost" style="position:fixed; width:1px; height:1px; overflow:hidden; left:-9999px;"></div>
 
 <script src="/vendor/qrcode.js"></script>
 <script src="/client.js"></script>
@@ -72,6 +75,33 @@ const { esc, fmt } = Alice;
 const audio = document.getElementById("audio");
 let soundOn = false;
 let lastQr = "";
+
+// ---- YouTube fallback: only used when the Pi has no local soundtrack file.
+// Streamed live from YouTube's own player, nothing downloaded or stored.
+let yt = null; // YT.Player once the API and a video id are both ready
+let ytReady = false;
+let ytVideoId = null;
+
+function loadYouTubeApiOnce() {
+  if (window.YT || document.getElementById("yt-api")) return;
+  const tag = document.createElement("script");
+  tag.id = "yt-api";
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
+}
+window.onYouTubeIframeAPIReady = () => { ytReady = true; maybeCreateYtPlayer(); };
+
+function maybeCreateYtPlayer() {
+  if (!ytReady || !ytVideoId || yt) return;
+  yt = new YT.Player("ytHost", {
+    videoId: ytVideoId,
+    playerVars: { controls: 0, disablekb: 1, modestbranding: 1, playsinline: 1 },
+    events: {
+      onReady: () => soundOn && reportAudio(true),
+      onError: () => reportAudio(false),
+    },
+  });
+}
 
 function render(s) {
   const lobby = s.phase === "setup";
@@ -106,20 +136,31 @@ function render(s) {
     audio.dataset.src = s.soundtrack;
     audio.src = s.soundtrack;
   }
+  if (s.youtubeId && s.youtubeId !== ytVideoId) {
+    ytVideoId = s.youtubeId;
+    loadYouTubeApiOnce();
+    maybeCreateYtPlayer();
+  }
   document.getElementById("soundNote").textContent = s.soundtrack
     ? "Tap once so this screen is allowed to play the soundtrack."
+    : s.youtubeId
+    ? "Tap once so this screen is allowed to play the soundtrack (streamed from YouTube)."
     : "No soundtrack on the Pi yet — add an audio file to the media folder. The timer works without it.";
   syncAudio();
 }
 
-// Keep the soundtrack where the clock says it should be.
+// Keep the soundtrack where the clock says it should be. Same logic for the
+// local <audio> element and the YouTube fallback player - only one of the
+// two is ever active, decided server-side (a local file always wins).
 function syncAudio() {
   const s = Alice.state;
   const label = document.getElementById("audioState");
-  if (!s || !soundOn || !s.soundtrack) {
+  const usingYt = Boolean(s?.youtubeId);
+  if (!s || !soundOn || (!s.soundtrack && !usingYt)) {
     label.textContent = "No sound";
     return;
   }
+  if (usingYt) return syncYoutube(s, label);
   if (s.clock.speed !== 1) {
     audio.pause();
     label.textContent = `Muted at x${s.clock.speed}`;
@@ -133,6 +174,28 @@ function syncAudio() {
   const target = Alice.elapsedMs() / 1000 + s.config.audioOffsetSeconds;
   if (Math.abs(audio.currentTime - target) > 1.5) audio.currentTime = target;
   if (audio.paused) audio.play().catch(() => {});
+  label.textContent = "Playing";
+}
+
+function syncYoutube(s, label) {
+  if (!yt || typeof yt.getPlayerState !== "function") {
+    label.textContent = "Loading sound";
+    return;
+  }
+  const YTSTATE = { PLAYING: 1, PAUSED: 2, CUED: 5 };
+  if (s.clock.speed !== 1) {
+    yt.pauseVideo();
+    label.textContent = `Muted at x${s.clock.speed}`;
+    return;
+  }
+  if (s.phase !== "running") {
+    yt.pauseVideo();
+    label.textContent = "Sound ready";
+    return;
+  }
+  const target = Alice.elapsedMs() / 1000 + s.config.audioOffsetSeconds;
+  if (Math.abs(yt.getCurrentTime() - target) > 1.5) yt.seekTo(target, true);
+  if (yt.getPlayerState() !== YTSTATE.PLAYING) yt.playVideo();
   label.textContent = "Playing";
 }
 
@@ -173,6 +236,18 @@ document.getElementById("enable").onclick = async () => {
       /* unlocking failed; syncAudio will retry */
     }
     if (audio.readyState >= 3) reportAudio(true);
+  }
+  if (ytVideoId) {
+    loadYouTubeApiOnce();
+    maybeCreateYtPlayer();
+    // Same play-then-pause trick, once the player exists.
+    for (let i = 0; i < 20 && !yt; i++) await new Promise((r) => setTimeout(r, 100));
+    try {
+      yt?.playVideo();
+      setTimeout(() => yt?.pauseVideo(), 150);
+    } catch {
+      /* unlocking failed; syncAudio will retry */
+    }
   }
   syncAudio();
 };
