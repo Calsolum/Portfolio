@@ -260,6 +260,22 @@ document.getElementById("toggle").onclick = () => {
   Alice.host(s.phase === "paused" ? "resume" : "pause").catch((err) => Alice.toast(err.message));
 };
 
+// Some TV remotes move a visual "cursor" over focusable elements without
+// giving them real DOM focus, so their OK button never triggers the
+// browser's normal Enter-activates-the-focused-button behavior. Give the
+// gate's primary button real focus up front, and back up Enter/Space on
+// both buttons with an explicit click() - harmless no-op on browsers where
+// the native activation already fires (the handlers above are idempotent).
+document.getElementById("enable").focus();
+for (const id of ["enable", "silent"]) {
+  document.getElementById(id).addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " " || e.keyCode === 13) {
+      e.preventDefault();
+      e.currentTarget.click();
+    }
+  });
+}
+
 setInterval(syncAudio, 1000);
 Alice.connect("table", render);
 tick();
