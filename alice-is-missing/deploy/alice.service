@@ -15,6 +15,10 @@ Restart=on-failure
 Environment=PORT=8080
 # Environment=ALICE_PIN=1234
 # Environment=PUBLIC_URL=http://alice.local:8080
+# No local file in media/? Stream a YouTube video's audio instead (the id is
+# the v= part of the URL) via YouTube's own embedded player - nothing is
+# downloaded. A file in media/ always takes priority if both are set.
+# Environment=ALICE_YOUTUBE_ID=dQw4w9WgXcQ
 
 [Install]
 WantedBy=multi-user.target
