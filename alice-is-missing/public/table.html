@@ -68,6 +68,55 @@
      browsers use as a cue to fully suspend an iframe's playback. -->
 <div id="ytHost" style="position:fixed; width:1px; height:1px; overflow:hidden; left:-9999px;"></div>
 
+<!-- Plain ES5 only, on purpose: some Smart TV browsers (confirmed: Samsung's
+     Tizen "Internet" app, an old WebKit build regardless of TV model year)
+     fail to parse the modern syntax used below/in client.js and abort the
+     WHOLE script, which silently kills every handler in it - including the
+     sound-gate buttons. This tiny script is self-contained so the buttons
+     keep working no matter what the rest of the app's JS does on a given
+     device. It uses addEventListener (not .onclick) so it layers on top of
+     the richer handlers further down without conflicting with them. -->
+<script>
+(function () {
+  function dismiss(full) {
+    var gate = document.getElementById("soundGate");
+    if (gate) {
+      gate.setAttribute("hidden", "hidden");
+      gate.style.display = "none";
+    }
+    if (full) {
+      var audio = document.getElementById("audio");
+      if (audio && audio.play) {
+        try {
+          var p = audio.play();
+          if (p && p.catch) p.catch(function () {});
+          audio.pause();
+        } catch (e) {}
+      }
+      if (document.documentElement.requestFullscreen) {
+        try { document.documentElement.requestFullscreen(); } catch (e) {}
+      }
+    }
+  }
+  function wire(id, full) {
+    var btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener("click", function () { dismiss(full); });
+    btn.addEventListener("keydown", function (e) {
+      var key = e.key, code = e.keyCode;
+      if (key === "Enter" || key === " " || code === 13 || code === 32) {
+        if (e.preventDefault) e.preventDefault();
+        dismiss(full);
+      }
+    });
+  }
+  wire("enable", true);
+  wire("silent", false);
+  var enableBtn = document.getElementById("enable");
+  if (enableBtn && enableBtn.focus) enableBtn.focus();
+})();
+</script>
+
 <script src="/vendor/qrcode.js"></script>
 <script src="/client.js"></script>
 <script>
