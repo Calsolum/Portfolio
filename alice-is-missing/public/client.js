@@ -11,7 +11,7 @@ const store = {
   get(key) {
     try {
       return localStorage.getItem(key);
-    } catch {
+    } catch (e) {
       return null;
     }
   },
@@ -19,7 +19,7 @@ const store = {
     try {
       if (value == null) localStorage.removeItem(key);
       else localStorage.setItem(key, value);
-    } catch {
+    } catch (e) {
       /* private mode - the page still works, it just won't remember */
     }
   },
@@ -116,7 +116,7 @@ const Alice = {
     readMarks() {
       try {
         return JSON.parse(store.get(`alice.read.${Alice.chat.epoch}`) || "{}");
-      } catch {
+      } catch (e) {
         return {};
       }
     },
@@ -349,7 +349,7 @@ const Alice = {
     try {
       await navigator.clipboard.writeText(text);
       return true;
-    } catch {
+    } catch (e) {
       const ta = document.createElement("textarea");
       ta.value = text;
       ta.style.position = "fixed";
@@ -370,7 +370,7 @@ const Alice = {
   async wakeLock() {
     try {
       if ("wakeLock" in navigator) await navigator.wakeLock.request("screen");
-    } catch {
+    } catch (e) {
       /* not available over plain HTTP; the page still works */
     }
   },
