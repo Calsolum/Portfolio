@@ -167,7 +167,7 @@ const openQr = new Set();
 function fill(el, value) {
   if (document.activeElement === el) return;
   if (el.type === "checkbox") el.checked = Boolean(value);
-  else if (el.value !== String(value ?? "")) el.value = value ?? "";
+  else if (el.value !== String(value != null ? value : "")) el.value = value != null ? value : "";
 }
 
 function build(s) {
@@ -175,7 +175,8 @@ function build(s) {
     const n = s.config.minSeats + i;
     return `<option value="${n}">${n} players</option>`;
   }).join("");
-  $("sfAdds").textContent = s.config.expansions.silentFalls?.adds ?? "";
+  const silentFalls = s.config.expansions.silentFalls;
+  $("sfAdds").textContent = (silentFalls && silentFalls.adds) || "";
 
   $("seats").innerHTML = Array.from({ length: s.config.maxSeats }, (_, i) => {
     const id = i + 1;
@@ -267,7 +268,7 @@ function render(s) {
       sel.innerHTML = opts;
       sel.dataset.opts = opts;
     }
-    fill(sel, s.clues[m] ?? "");
+    fill(sel, s.clues[m] != null ? s.clues[m] : "");
     const btn = row.querySelector("[data-reveal]");
     const revealed = s.revealed.includes(m);
     btn.textContent = revealed ? "Sent ✓" : s.fired.includes(m) ? "Mark sent" : "Upcoming";
@@ -397,7 +398,7 @@ $("pinForm").addEventListener("submit", async (e) => {
   try {
     await Alice.act("auth", { pin });
     store.set("alice.pin", pin);
-    es?.close();
+    if (es) es.close();
     es = Alice.connect("facilitator", render);
   } catch (err) {
     Alice.toast(err.message);
@@ -440,7 +441,7 @@ const npcMe = () => ({ npc: Number($("npcFrom").value) });
 
 function renderNpcs() {
   const s = Alice.state;
-  const npcs = s?.npcs ?? [];
+  const npcs = (s && s.npcs) || [];
   $("npcList").innerHTML = npcs.length
     ? npcs.map((n) => `<span class="npc-chip">${esc(n.name)}<button data-npc-remove="${n.id}" aria-label="Remove ${esc(n.name)}">×</button></span>`).join("")
     : `<span class="hint" style="margin:0">No NPCs yet.</span>`;
