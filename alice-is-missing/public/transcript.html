@@ -88,8 +88,7 @@ document.getElementById("download").onclick = () => {
   const data = {
     exportedAt: new Date().toISOString(),
     seats: s.seats.map(({ id, name, character }) => ({ id, name, character })),
-    messages: chat.messages.map((m) => ({
-      ...m,
+    messages: chat.messages.map((m) => Object.assign({}, m, {
       threadName: chat.threadName(m.thread, null),
       sender: chat.senderName(m),
       clock: chat.timeLabel(m),
