@@ -117,6 +117,57 @@
 })();
 </script>
 
+<!-- TEMPORARY diagnostic, remove once the TV compatibility issue is found.
+     Plain ES5 like the script above. Uses eval() to test each modern-JS
+     feature at RUNTIME (inside its own try/catch), so a SyntaxError from an
+     unsupported feature can't abort this script the way it aborts client.js -
+     eval's parse failure only throws when that eval() call runs, not when
+     this file is parsed. Prints a pass/fail line across the top of the page. -->
+<script>
+(function () {
+  function supports(code) {
+    try { return eval(code) !== false; }
+    catch (e) { return false; }
+  }
+  var checks = [
+    ["arrow", "(function(){return eval('(x=>x)(1)')===1;})()"],
+    ["let", "(function(){eval('let z=1;');return true;})()"],
+    ["const", "(function(){eval('const z=1;');return true;})()"],
+    ["template", "(function(){eval('var z=`a${1}b`;');return true;})()"],
+    ["destructure", "(function(){eval('var {a}={a:1};');return true;})()"],
+    ["class", "(function(){eval('class A{}');return true;})()"],
+    ["spread", "(function(){eval('var z=[...[1,2]];');return true;})()"],
+    ["forof", "(function(){eval('for (var x of [1]) {}');return true;})()"],
+    ["asyncfn", "(function(){eval('(async function(){})');return true;})()"],
+    ["promise", "typeof Promise !== 'undefined'"],
+    ["fetch", "typeof fetch !== 'undefined'"],
+    ["eventsource", "typeof EventSource !== 'undefined'"],
+    ["padstart", "typeof String.prototype.padStart === 'function'"],
+    ["arrayfrom", "typeof Array.from === 'function'"],
+    ["objectassign", "typeof Object.assign === 'function'"],
+    ["catchbinding", "(function(){eval('try{throw 1}catch{}');return true;})()"],
+  ];
+  var out = [];
+  for (var i = 0; i < checks.length; i++) {
+    out.push(checks[i][0] + ":" + (supports(checks[i][1]) ? "Y" : "N"));
+  }
+  var div = document.createElement("div");
+  div.id = "jsDiag";
+  div.style.position = "fixed";
+  div.style.top = "0";
+  div.style.left = "0";
+  div.style.right = "0";
+  div.style.background = "#000";
+  div.style.color = "#0f0";
+  div.style.font = "14px monospace";
+  div.style.padding = "4px";
+  div.style.zIndex = "99999";
+  div.style.whiteSpace = "normal";
+  div.textContent = out.join("  ");
+  document.body.appendChild(div);
+})();
+</script>
+
 <script src="/vendor/qrcode.js"></script>
 <script src="/client.js"></script>
 <script>
