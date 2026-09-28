@@ -165,6 +165,47 @@
   div.style.whiteSpace = "normal";
   div.textContent = out.join("  ");
   document.body.appendChild(div);
+
+  // Catch whatever actually throws at runtime (e.g. inside client.js or the
+  // main inline script below) and print it here too, instead of it silently
+  // stopping that script with nothing visible on screen.
+  var errDiv = document.createElement("div");
+  errDiv.id = "jsErr";
+  errDiv.style.position = "fixed";
+  errDiv.style.top = "22px";
+  errDiv.style.left = "0";
+  errDiv.style.right = "0";
+  errDiv.style.background = "#400";
+  errDiv.style.color = "#fff";
+  errDiv.style.font = "13px monospace";
+  errDiv.style.padding = "4px";
+  errDiv.style.zIndex = "99999";
+  errDiv.style.whiteSpace = "pre-wrap";
+  errDiv.textContent = "(no JS errors yet)";
+  document.body.appendChild(errDiv);
+  window.addEventListener("error", function (e) {
+    errDiv.textContent = "ERROR: " + e.message + " @ " + e.filename + ":" + e.lineno;
+  });
+
+  // Also report, after a few seconds, whether the live game state ever
+  // arrived over EventSource at all - tells us if the connection itself
+  // is the problem versus something failing after it connects.
+  setTimeout(function () {
+    var got = !!(window.Alice && window.Alice.state);
+    var note = document.createElement("div");
+    note.id = "jsState";
+    note.style.position = "fixed";
+    note.style.top = "44px";
+    note.style.left = "0";
+    note.style.right = "0";
+    note.style.background = got ? "#043" : "#440";
+    note.style.color = "#fff";
+    note.style.font = "13px monospace";
+    note.style.padding = "4px";
+    note.style.zIndex = "99999";
+    note.textContent = "Alice.state after 4s: " + (got ? "RECEIVED" : "still null (no state pushed yet)");
+    document.body.appendChild(note);
+  }, 4000);
 })();
 </script>
 
