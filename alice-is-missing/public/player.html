@@ -142,7 +142,7 @@ let tab = "messages";
 let openThread = null;
 const typingUntil = {}; // thread -> { name, until }
 
-const mySeat = () => Alice.state?.mySeat ?? null;
+const mySeat = () => (Alice.state && Alice.state.mySeat != null ? Alice.state.mySeat : null);
 const me = () => ({ seat: mySeat() });
 
 // ---------------------------------------------------------------- layout
@@ -161,11 +161,11 @@ function show() {
 
 function renderTitle() {
   const s = Alice.state;
-  if (!s?.mySeat) return;
+  if (!(s && s.mySeat)) return;
   const self = s.seats.find((x) => x.id === s.mySeat);
   $("title").textContent = tab === "messages" && openThread
     ? chat.threadName(openThread, s.mySeat)
-    : self?.character || self?.name || `Seat ${s.mySeat}`;
+    : (self && (self.character || self.name)) || `Seat ${s.mySeat}`;
 }
 
 // Keep the composer above the on-screen keyboard.
@@ -173,7 +173,7 @@ function fitViewport() {
   const vv = window.visualViewport;
   if (vv) document.documentElement.style.setProperty("--app-h", `${vv.height}px`);
 }
-window.visualViewport?.addEventListener("resize", () => {
+if (window.visualViewport) window.visualViewport.addEventListener("resize", () => {
   fitViewport();
   if (openThread) scrollToEnd();
 });
@@ -211,14 +211,14 @@ function render(s) {
 
   // Alert for the earliest clue of mine that's due and not yet sent.
   const due = Alice.dueIntervals().filter((m) => s.clues[m] === s.mySeat);
-  alerting = due[0] ?? null;
+  alerting = due.length ? due[0] : null;
   $("alert").hidden = alerting == null;
   $("clueBadge").hidden = alerting == null;
   if (alerting != null) {
     $("alertText").textContent = `Reveal your ${alerting}-minute clue`;
     if (!seenClues.has(alerting)) {
       seenClues.add(alerting);
-      navigator.vibrate?.([400, 150, 400, 150, 800]);
+      if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 800]);
     }
   }
 
@@ -232,7 +232,7 @@ function render(s) {
   $("tableNotes").classList.toggle("sub", !s.tableNotes);
 
   // A new announcement gets a buzz (but not the one already showing when the page loads).
-  if (lastAnnouncement !== undefined && s.announcement && s.announcement !== lastAnnouncement) navigator.vibrate?.([200, 100, 200]);
+  if (lastAnnouncement !== undefined && s.announcement && s.announcement !== lastAnnouncement && navigator.vibrate) navigator.vibrate([200, 100, 200]);
   lastAnnouncement = s.announcement;
 
   renderThreads(); // names may have changed
@@ -262,7 +262,7 @@ function renderNow() {
   if (top) {
     strip.textContent = top.text;
     strip.className = `strip ${top.tone}`;
-    strip.dataset.go = top.go ?? "clues";
+    strip.dataset.go = top.go != null ? top.go : "clues";
   }
 }
 
@@ -296,14 +296,15 @@ function avatar(thread) {
 function preview(thread) {
   const t = typingUntil[thread];
   if (t && t.until > Date.now()) return `${esc(t.name)} is typing…`;
-  const last = chat.inThread(thread).at(-1);
+  const msgs = chat.inThread(thread);
+  const last = msgs.length ? msgs[msgs.length - 1] : undefined;
   if (!last) return thread === "group" ? "Everyone" : "No messages yet";
   const who = chat.isFrom(last, me()) ? "You" : thread === "group" ? chat.senderName(last) : "";
   return esc(who ? `${who}: ${last.text}` : last.text);
 }
 
 function renderThreads() {
-  if (!Alice.state?.mySeat) return;
+  if (!(Alice.state && Alice.state.mySeat)) return;
   let total = 0;
   $("threads").innerHTML = chat
     .threadsFor(mySeat())
@@ -377,7 +378,7 @@ chat.enable(
     if (msg && !chat.isFrom(msg, me())) {
       delete typingUntil[msg.thread];
       const watching = openThread === msg.thread && document.visibilityState === "visible";
-      if (!watching) navigator.vibrate?.(120);
+      if (!watching && navigator.vibrate) navigator.vibrate(120);
     }
     renderThread();
     renderTyping();
