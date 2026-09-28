@@ -163,7 +163,10 @@
   div.style.padding = "4px";
   div.style.zIndex = "99999";
   div.style.whiteSpace = "normal";
-  div.textContent = out.join("  ");
+  // BUILD_TAG: bump this string on every deploy of this file so a photo of
+  // the screen proves whether the browser is actually running the latest
+  // version or serving a stale cached copy.
+  div.textContent = "BUILD 2026-09-28-d | " + out.join("  ");
   document.body.appendChild(div);
 
   // Catch whatever actually throws at runtime (e.g. inside client.js or the
@@ -209,8 +212,11 @@
 })();
 </script>
 
-<script src="/vendor/qrcode.js"></script>
-<script src="/client.js"></script>
+<!-- ?v= busts any cache that ignores the no-store header outright (confirmed
+     necessary: this app's target Smart TV browser). Bump alongside BUILD_TAG
+     above whenever client.js changes. -->
+<script src="/vendor/qrcode.js?v=2026-09-28-d"></script>
+<script src="/client.js?v=2026-09-28-d"></script>
 <script>
 const { esc, fmt } = Alice;
 const audio = document.getElementById("audio");
