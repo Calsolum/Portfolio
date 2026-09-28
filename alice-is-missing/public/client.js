@@ -37,7 +37,7 @@ const Alice = {
 
   // Connect to the live state stream. onState runs on every push.
   connect(role, onState, extra = {}) {
-    const q = new URLSearchParams({ role, ...extra });
+    const q = new URLSearchParams(Object.assign({ role }, extra));
     const pin = store.get("alice.pin");
     if (pin) q.set("pin", pin);
     const es = new EventSource(`/api/events?${q}`);
@@ -206,7 +206,7 @@ const Alice = {
     const res = await fetch("/api/action", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ type, pin, token: store.get("alice.token"), ...data }),
+      body: JSON.stringify(Object.assign({ type, pin, token: store.get("alice.token") }, data)),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
