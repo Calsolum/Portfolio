@@ -4,7 +4,7 @@
   "audioOffsetSeconds": 0,
   "minSeats": 3,
   "maxSeats": 5,
-  "clueIntervals": [80, 70, 60, 50, 40, 30, 20, 10],
+  "clueIntervals": [80, 70, 60, 50, 45, 40, 35, 30, 20, 10],
   "cardsPerInterval": 3,
   "expansions": {
     "silentFalls": {
