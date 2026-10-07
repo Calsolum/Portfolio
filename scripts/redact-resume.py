@@ -9,11 +9,17 @@ operators themselves from the page content stream.
 After this runs the header reads:  tariq@live.ca | Brampton, Canada
 
 Usage:
-    python3 scripts/redact-resume.py <source.pdf> <output.pdf>
+    python3 scripts/redact-resume.py <source.pdf> <output.pdf> <phone>
+
+<phone> is the number exactly as it appears on the resume, digit groups
+separated by dashes (e.g. 555-123-4567). It can also come from the
+RESUME_PHONE environment variable. It's passed in at run time so the number
+itself never has to be written into this public repo.
 
 Run it against the pristine resume export, not against an already-redacted
 file, so the transform stays reproducible.
 """
+import os
 import sys
 
 import pikepdf
@@ -22,18 +28,23 @@ import pikepdf
 POSTAL_PREFIX = "a L"
 
 
-def redact(src: str, out: str) -> None:
+def redact(src: str, out: str, phone: str) -> None:
+    groups = [g for g in phone.split("-") if g]
+    if len(groups) < 2:
+        raise SystemExit("phone must be digit groups separated by dashes, e.g. 555-123-4567")
+    first, last = groups[0], groups[-1]
+
     pdf = pikepdf.open(src)
     page = pdf.pages[0]
     ops = pikepdf.parse_content_stream(page)
 
     # --- phone number -------------------------------------------------
-    # Drawn as separate runs: Tj "XXX", Tj "-", Tj "XXX", Tj "-", then a TJ
-    # array holding "XXXX " and the "|" separator that followed it.
+    # Drawn as separate runs: one Tj per digit group and per dash, then a TJ
+    # array holding the last group and the "|" separator that followed it.
     start = next(i for i, (o, op) in enumerate(ops)
-                 if str(op) == "Tj" and "XXX" in str(o))
+                 if str(op) == "Tj" and first in str(o))
     end = next(i for i, (o, op) in enumerate(ops)
-               if i > start and str(op) == "TJ" and "XXXX" in str(o))
+               if i > start and str(op) == "TJ" and last in str(o))
     header = next(i for i, (o, op) in enumerate(ops)
                   if i > end and str(op) == "TJ" and "@" in str(o))
 
@@ -70,4 +81,9 @@ def redact(src: str, out: str) -> None:
 
 
 if __name__ == "__main__":
-    redact(sys.argv[1], sys.argv[2])
+    if len(sys.argv) < 3:
+        raise SystemExit(__doc__)
+    phone = sys.argv[3] if len(sys.argv) > 3 else os.environ.get("RESUME_PHONE", "")
+    if not phone:
+        raise SystemExit("pass the phone number as the third argument or set RESUME_PHONE")
+    redact(sys.argv[1], sys.argv[2], phone)
