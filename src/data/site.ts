@@ -244,6 +244,12 @@ export const projects: Project[] = [
     stack: "Vanilla HTML · CSS · JavaScript · No dependencies",
     tags: ["JavaScript", "Single File", "Game"],
     app: "/apps/drunkquest.html",
+    image: {
+      src: "/images/drunkquest.png",
+      alt: "A DrunkQuest round in progress: Aria's turn in the action phase, with the Skeleton Bartender drawn at a drink value of 3 and the top of her treasure hand below.",
+      width: 2560,
+      height: 1600,
+    },
     readable: true,
   },
   {
@@ -256,6 +262,12 @@ export const projects: Project[] = [
     stack: "Vanilla HTML · CSS · JavaScript · No dependencies · 270KB",
     tags: ["JavaScript", "Single File", "Deduction"],
     app: "/apps/tragedy-looper.html",
+    image: {
+      src: "/images/tragedy-looper.png",
+      alt: "The Tragedy Looper game board on Day 2 of 3: characters laid out by location (Hospital, Shrine, City, School) with unease, intrigue and goodwill counters, and Next Day and Advice buttons along the bottom.",
+      width: 2560,
+      height: 1600,
+    },
     readable: true,
   },
   {
