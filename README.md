@@ -42,6 +42,47 @@ script overwrites them.
 a matching `src/content/<slug>.html`. The category index and reading page pick it up
 automatically via `generateStaticParams`.
 
+## Updating the resume
+
+The resume at `public/downloads/tariq-singh-resume.pdf` (linked from `/about`) is a static
+file. It is **not** generated from `src/data/site.ts`, and the published copy has been edited
+after export to remove private contact details. A fresh export needs those edits reapplied
+every time:
+
+1. **Export a fresh PDF** from the resume source and keep it **outside this folder**. The
+   repo is public on GitHub, so the unredacted export must never be committed.
+2. **Install the one dependency** (first time on a machine): `pip install pikepdf`.
+3. **Strip the phone number, postal code and PDF metadata.** Pass the phone number exactly
+   as it appears on the resume (digit groups separated by dashes). It's given at run time so
+   the number is never written into this public repo:
+
+   ```bash
+   python scripts/redact-resume.py <fresh-export.pdf> redacted.pdf <phone-number>
+   ```
+
+4. **Swap the email to the site's address** (`tariq@live.ca` → `tariq@tariqsingh.ca`, to
+   match `profile.email` in `site.ts`):
+
+   ```bash
+   python scripts/update-resume-email.py redacted.pdf public/downloads/tariq-singh-resume.pdf
+   ```
+
+   Skip this step if the export already shows `tariq@tariqsingh.ca`. The script stops with
+   "could not find 'live'" when there's nothing to swap; in that case copy `redacted.pdf` to
+   `public/downloads/tariq-singh-resume.pdf` instead.
+5. **Check the result before committing.** Open the PDF and search it (Ctrl+F) for the phone
+   number and postal code; neither should be found. The header should read
+   `tariq@tariqsingh.ca | Brampton, Canada`. Then delete `redacted.pdf`.
+6. **Ship it** through a PR like any other change, and open
+   <https://tariqsingh.ca/downloads/tariq-singh-resume.pdf> once it has deployed.
+
+**If a script fails**, the resume's header layout has probably changed. Both scripts match
+exact text runs in the PDF's header line: `redact-resume.py` looks for the first and last
+digit groups of the phone number you pass in, plus `POSTAL_PREFIX`, and
+`update-resume-email.py` looks for `OLD_LOCAL`.
+Update those to match the new export, then rerun from step 3. On macOS or Linux, use
+`python3` in place of `python`.
+
 ## Structure
 
 ```
