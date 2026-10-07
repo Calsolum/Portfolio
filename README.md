@@ -77,3 +77,7 @@ falls back to `http://localhost:3000`.
 - Scroll reveals are progressive enhancement — a `<noscript>` rule keeps content visible
   without JavaScript.
 - Contact is a `mailto:` link; there is no form backend.
+- Traffic is measured with Vercel Web Analytics (`<Analytics />` in `src/app/layout.tsx`).
+  It is cookie-free and only reports from Vercel deployments — nothing is sent in local
+  dev. Data appears under the project's **Analytics** tab in the Vercel dashboard once Web
+  Analytics is enabled there.

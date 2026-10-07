@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Bebas_Neue, DM_Mono, DM_Serif_Display, Libre_Baskerville } from "next/font/google";
 
@@ -82,6 +83,7 @@ export default function RootLayout({
         <Nav />
         <main className="pt-16">{children}</main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );
