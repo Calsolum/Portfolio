@@ -121,10 +121,13 @@ export const sections: Section[] = [
 ];
 
 /**
- * TODO: Mansion of Fate and Choices are still works in progress — neither has a
- * published itch.io page yet, so their links point at the itch.io profile root
- * and are labelled as in-progress rather than as a playable demo. When either
- * game ships, swap in its real page URL and restore the "Play …" label.
+ * TODO: Choices is still a work in progress and has no published itch.io page
+ * yet, so its link points at the itch.io profile root and is labelled as
+ * in-progress rather than as a playable demo. When it ships, swap in its real
+ * page URL and restore the "Play …" label.
+ *
+ * Mansion of Fate links straight to its itch.io page, which hosts the playable
+ * prologue; the full game is still in development.
  */
 export const works: Work[] = [
   {
@@ -136,7 +139,7 @@ export const works: Work[] = [
       "A group of friends follow the reckless Erica into an abandoned mansion that appeared overnight. Trapped in a shifting labyrinth, separated, and forced to survive lethal puzzles — every choice shapes who makes it out. Multiple endings, a hidden true ending, and a story that remembers what you did last time.",
     tags: ["Visual Novel Maker", "Ren'Py", "Branching Narrative"],
     status: "In progress",
-    links: [{ label: "Follow on itch.io", href: profile.links.itch }],
+    links: [{ label: "Play the prologue on itch.io", href: "https://ns-kt.itch.io/mansion-of-fate" }],
     readable: true,
   },
   {
