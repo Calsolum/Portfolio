@@ -121,13 +121,9 @@ export const sections: Section[] = [
 ];
 
 /**
- * TODO: Choices is still a work in progress and has no published itch.io page
- * yet, so its link points at the itch.io profile root and is labelled as
- * in-progress rather than as a playable demo. When it ships, swap in its real
- * page URL and restore the "Play …" label.
- *
- * Mansion of Fate links straight to its itch.io page, which hosts the playable
- * prologue; the full game is still in development.
+ * Both games link straight to their itch.io pages and play in the browser:
+ * Mansion of Fate hosts the playable prologue, and Choices hosts the current
+ * build. Both are still in development, hence the "In progress" status.
  */
 export const works: Work[] = [
   {
@@ -151,7 +147,7 @@ export const works: Work[] = [
       "A short RPG built on a single principle — every choice is final. Enemies can be fought or reasoned with, alliances can be forged or burned, but nothing can be undone. A compact, replayable experience that puts consequence at the centre of every decision.",
     tags: ["RPG Maker", "Short Form"],
     status: "In progress",
-    links: [{ label: "Follow on itch.io", href: profile.links.itch }],
+    links: [{ label: "Play on itch.io", href: "https://ns-kt.itch.io/choices" }],
     readable: true,
   },
   {
