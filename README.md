@@ -2,10 +2,11 @@
 
 Personal portfolio site for Tariq Singh: interactive fiction, novels, poetry, stage and
 screen scripts, and self-built technical projects. Most works are readable in full on the
-site, two of the projects are playable in the browser, and the FGO Team Builder runs at `/fgo`.
+site, two of the projects are playable in the browser, the FGO Team Builder runs at `/fgo`, and the Daily
+Deals finder runs at `/deals`.
 
-Built with Next.js (App Router), TypeScript and Tailwind CSS v4. Every route is statically
-prerendered.
+Built with Next.js (App Router), TypeScript and Tailwind CSS v4. Every page is statically
+prerendered; the only server code is the web-search API route behind `/deals`.
 
 ## Getting started
 
@@ -20,7 +21,7 @@ Other scripts:
 npm run build    # production build (also type-checks)
 npm run start    # serve the production build
 npm run lint     # eslint
-npm test         # vitest (FGO Team Builder engine)
+npm test         # vitest (FGO Team Builder engine, Daily Deals)
 ```
 
 ## Editing the site
@@ -91,6 +92,9 @@ src/components/     layout (Nav, Footer), home (Hero, Stats), works, ui
 src/content/        full text of each work, as HTML fragments
 src/data/site.ts    all copy, metadata and links
 src/fgo/            FGO Team Builder: atlas/ (API client + cache), engine/ (battle sim + search), state/, ui/
+src/deals/          Daily Deals: lib/ (geo, OpenStreetMap, matching, validation), data/ (checked deals),
+                    server/ (web search, cache, limits), ui/
+src/app/api/        the one API route: deals/web, the web search behind /deals
 src/lib/content.ts  content loaders
 public/apps/        self-contained playable builds (DrunkQuest, Tragedy Looper)
 public/downloads/   script PDFs and the resume
@@ -98,8 +102,9 @@ public/downloads/   script PDFs and the resume
 
 ## Deploy
 
-Hosted on Vercel, which detects Next.js and needs no build configuration or environment
-variables — `next build` is the whole story. Pushes to the production branch
+Hosted on Vercel, which detects Next.js and needs no build configuration. The one environment
+variable is the optional `ANTHROPIC_API_KEY` that switches on web search on `/deals` (see below);
+without it `next build` is the whole story. Pushes to the production branch
 (`portfolio`, also the repo default) deploy automatically; other branches get preview
 deployments.
 
@@ -111,6 +116,58 @@ every Open Graph and canonical URL — resolves to the bare domain.
 / `VERCEL_URL`, so Open Graph and canonical URLs stay absolute and correct on production,
 previews, and the custom domain — no code change needed when the domain changed. Locally it
 falls back to `http://localhost:3000`.
+
+## Daily Deals (`/deals`)
+
+Weekday food specials near a place, from two sources: a checked list in `src/deals/data/curated.ts`
+and a web search by Claude. Nearby places come from OpenStreetMap (Overpass: four public servers,
+with a slow one joined by the next rather than waited for) and locations from Nominatim, both called
+from the visitor's browser.
+
+**Switching on web search.** Without a key everything works except web search. On load the page asks
+`/api/deals/web?status=1` whether a key is set and, if not, leaves the web search panel out, so
+visitors never meet a button that does not work. Environment variables only reach a new deployment,
+so redeploy after adding the key (the answer is cached for about a minute).
+
+1. In the Claude Console, create a workspace just for this site and set a **monthly spend limit**
+   on it. That limit is the real ceiling on cost; the in-app limits below are only brakes.
+2. Create an API key in that workspace and add it to the Vercel project as `ANTHROPIC_API_KEY`
+   (Production, and Preview if you want to try it on previews).
+3. To try it locally, put the same line in `.env.local`, which git ignores.
+
+**What a search costs.** A search by Claude, with up to six web searches ($10 per 1,000) and three
+page fetches, is roughly 25 cents to a dollar. Every search logs one `[deals-web]` line in the
+Vercel logs with token counts, search count and an estimate in dollars, so the real figure is
+visible. A result is cached for a week per 5 km grid square and shared by every visitor, and an
+empty result is cached too. On top of that each visitor may start 5 new searches per 10 minutes and
+the site 20 per hour (per server instance). The model is the `MODEL` constant in
+`src/deals/server/webSearch.ts`; keep the `PRICE` constants beside it in step when it changes, and
+bump `PROMPT_VERSION` to throw away every cached search after editing the prompt.
+
+**Function time limit.** A new search can run for a couple of minutes, so the route sets
+`maxDuration = 300`. That needs Vercel's Fluid compute, which is on by default for new projects; on
+a project without it the Hobby plan caps functions at 60 s and the deploy will say so.
+
+**Trusting the results.** The server keeps a web deal only if its source link is a page the search
+or fetch tools actually returned in that same response, and re-checks days, text lengths and links.
+The browser checks the result again before showing it, because it also reads results back from
+`localStorage`.
+
+**Updating the checked list.** The rules are at the top of the data file: the source page itself
+must state the weekday, food deals only, no every-day happy hours or limited-time promotions.
+For a chain, add its Wikidata ID (open any branch on openstreetmap.org and read `brand:wikidata`)
+and its names. For a single venue, add its OpenStreetMap ID and coordinates. Cards older than 90
+days are marked as possibly out of date, so re-read the source and bump `verified` now and then.
+When a source gives an end date, set `until` (YYYY-MM-DD) and the deal hides itself the day after;
+the three Swiss Chalet entries use it, because that chain says its daily deals end on 2026-10-31,
+so check its specials page then.
+`npm test` checks the file (unique IDs, valid weekdays, https sources, well-formed Wikidata and
+OpenStreetMap IDs) and checks the pinned venues against a real OpenStreetMap response.
+
+**Who sees what.** Overpass receives a position rounded to about 100 m and Nominatim receives
+either the typed place or that rounded position. This site's server sees only a 5 km grid-square ID,
+and only when someone presses the web search button. The visitor's exact position stays in the
+browser.
 
 ## Notes
 
