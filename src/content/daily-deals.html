@@ -1,0 +1,28 @@
+<p><em>Web App · Local Food Deals</em></p>
+
+<p>Nobody keeps one list of which pub does wings on which night. This page tries to.</p>
+
+<p>Pick a place, or let your browser find you, and Daily Deals shows the weekday food specials around it: Tuesday wings, Wednesday ribs, the $15 lunch. They are sorted by distance and filtered by day of the week, and every card links to the page that says so.</p>
+
+<hr />
+
+<h2>Where the deals come from</h2>
+
+<p>There is no public feed of restaurant specials, so the page draws on two sources and labels each card with the one it came from.</p>
+
+<ul>
+<li><strong>A checked list.</strong> A short list of deals read off each restaurant's or chain's own website and typed in by hand, each with the date it was last checked. After 90 days a card is marked as possibly out of date. Only deals tied to a day of the week make the list: no every-day happy hours, no limited-time promotions.</li>
+<li><strong>A web search.</strong> A button hands the area to Claude through the Anthropic API's web search and web fetch tools. It searches, reads the most promising pages and reports the weekday deals it can source. The server keeps a deal only if its link is a page the search actually returned, so a made-up source cannot get through.</li>
+</ul>
+
+<h2>Finding what is nearby</h2>
+
+<p>Places come from OpenStreetMap through the Overpass API, which is free and often overloaded, so the page tries several servers, starts the next one when the first is slow, and remembers recent lookups in the browser. Chains are recognised by the Wikidata brand ID that OpenStreetMap carries, with the name as a fallback, and a Canadian chain's deal is never shown in the United States. Where the same venue is mapped twice, the fuller entry wins.</p>
+
+<h2>Privacy and cost</h2>
+
+<p>Your position stays in your browser. Looking up places sends OpenStreetMap a position rounded to about 100 metres. A web search tells this site only which 5 km grid square you are in, and one search is shared by everyone in that square for a week.</p>
+
+<p>Web search is the only part that costs money, so it is bounded: a few searches per request, a time limit, a rate limit, and a week-long cache so that repeat visits cost nothing.</p>
+
+<p><strong>Tech stack:</strong> Next.js · TypeScript · OpenStreetMap (Overpass, Nominatim) · Claude API (web search and web fetch) · Vitest</p>

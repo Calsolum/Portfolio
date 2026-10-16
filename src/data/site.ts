@@ -116,7 +116,7 @@ export const sections: Section[] = [
     title: "Technical",
     titleLine2: "Projects",
     intro:
-      "Five projects built from scratch — a self-hosted smart home system, a digital party game, a board game companion app, a Raspberry Pi game assistant, and a team planner for Fate/Grand Order.",
+      "Six projects built from scratch — a self-hosted smart home system, a digital party game, a board game companion app, a Raspberry Pi game assistant, a team planner for Fate/Grand Order, and a finder for weekday food deals.",
   },
 ];
 
@@ -305,6 +305,18 @@ export const projects: Project[] = [
     app: "/fgo",
     readable: true,
   },
+  {
+    slug: "daily-deals",
+    title: "Daily Deals",
+    category: "projects",
+    kind: "Web App · Local Food Deals",
+    blurb:
+      "Finds weekday food specials near you: wing nights, taco Tuesdays, lunch combos. Type a place or use your location and it lists a hand-checked set of deals from the restaurants' own sites, nearest first. A button hands the rest to Claude, which searches the web and reads pages, and the site keeps only the deals it can link to a page the search actually returned.",
+    stack: "Next.js · TypeScript · OpenStreetMap · Claude API",
+    tags: ["TypeScript", "Claude API", "OpenStreetMap"],
+    app: "/deals",
+    readable: true,
+  },
 ];
 
 export const stats = [
@@ -314,7 +326,7 @@ export const stats = [
   { value: "1", label: "Novella" },
   { value: "1", label: "Stage Adaptation" },
   { value: "1", label: "Film Script" },
-  { value: "5", label: "Projects" },
+  { value: "6", label: "Projects" },
 ];
 
 export interface ExperienceEntry {
