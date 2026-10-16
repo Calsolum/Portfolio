@@ -70,7 +70,7 @@ export function Hero() {
             </Link>
           ))}
           <p className="px-4 py-2 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted">
-            + Poetry, stage play &amp; 3 projects →
+            + Poetry, stage play &amp; {projects.length} projects →
           </p>
         </div>
       </Container>

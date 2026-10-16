@@ -1,0 +1,390 @@
+{
+ "version": 0.6,
+ "generator": "Overpass API 0.7.62.11 87bfad18",
+ "osm3s": {
+  "timestamp_osm_base": "2026-10-16T04:32:20Z",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+ },
+ "elements": [
+  {
+   "type": "node",
+   "id": 375835831,
+   "lat": 43.7031629,
+   "lon": -79.7415781,
+   "tags": {
+    "addr:housenumber": "344",
+    "addr:street": "Queen Street East",
+    "amenity": "fast_food",
+    "brand": "McDonald's",
+    "brand:wikidata": "Q38076",
+    "cuisine": "burger",
+    "name": "McDonald's"
+   }
+  },
+  {
+   "type": "node",
+   "id": 378509046,
+   "lat": 43.6763811,
+   "lon": -79.7715233,
+   "tags": {
+    "amenity": "cafe",
+    "brand": "Tim Hortons",
+    "brand:wikidata": "Q175106",
+    "cuisine": "coffee_shop",
+    "name": "Tim Hortons"
+   }
+  },
+  {
+   "type": "node",
+   "id": 431141536,
+   "lat": 43.6685423,
+   "lon": -79.7374812,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Subway",
+    "brand:wikidata": "Q244457",
+    "cuisine": "sandwich",
+    "name": "Subway"
+   }
+  },
+  {
+   "type": "node",
+   "id": 582742869,
+   "lat": 43.6672165,
+   "lon": -79.7789295,
+   "tags": {
+    "addr:housenumber": "8975",
+    "addr:street": "Chinguacousy Road",
+    "amenity": "fast_food",
+    "brand": "Pizza Pizza",
+    "brand:wikidata": "Q1194143",
+    "cuisine": "pizza",
+    "name": "Pizza Pizza"
+   }
+  },
+  {
+   "type": "node",
+   "id": 703107999,
+   "lat": 43.6781913,
+   "lon": -79.7624318,
+   "tags": {
+    "amenity": "pub",
+    "name": "Casa Europa Sports Bar"
+   }
+  },
+  {
+   "type": "node",
+   "id": 887581927,
+   "lat": 43.6935186,
+   "lon": -79.7682503,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Pizza Pizza",
+    "brand:wikidata": "Q1194143",
+    "cuisine": "pizza",
+    "name": "Pizza Pizza"
+   }
+  },
+  {
+   "type": "node",
+   "id": 887581940,
+   "lat": 43.6931134,
+   "lon": -79.7683254,
+   "tags": {
+    "addr:housenumber": "320",
+    "addr:street": "Main Street North",
+    "amenity": "fast_food",
+    "brand": "Popeyes",
+    "brand:wikidata": "Q1330910",
+    "cuisine": "chicken",
+    "name": "Popeyes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 887581948,
+   "lat": 43.6927984,
+   "lon": -79.7682692,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Harvey's",
+    "brand:wikidata": "Q1466184",
+    "cuisine": "burger",
+    "name": "Harvey's"
+   }
+  },
+  {
+   "type": "node",
+   "id": 887629220,
+   "lat": 43.6945031,
+   "lon": -79.7488082,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Mary Brown's",
+    "brand:wikidata": "Q6779125",
+    "cuisine": "chicken",
+    "name": "Mary Brown's"
+   }
+  },
+  {
+   "type": "node",
+   "id": 922168695,
+   "lat": 43.6968126,
+   "lon": -79.7516542,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Subway",
+    "brand:wikidata": "Q244457",
+    "cuisine": "sandwich",
+    "name": "Subway"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5991686944,
+   "lat": 43.6957456,
+   "lon": -79.7486562,
+   "tags": {
+    "amenity": "restaurant",
+    "name": "Chuck's Roadhouse Bar & Grill"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6200057751,
+   "lat": 43.6854219,
+   "lon": -79.7456735,
+   "tags": {
+    "addr:housenumber": "89",
+    "addr:street": "Clarence Street",
+    "amenity": "pub",
+    "cuisine": "regional",
+    "name": "Clocktower Brew Pub"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6226609547,
+   "lat": 43.6996129,
+   "lon": -79.7468298,
+   "tags": {
+    "amenity": "pub",
+    "name": "Maguires Irish Pub"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6566848336,
+   "lat": 43.6662773,
+   "lon": -79.7381009,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "A&W",
+    "brand:wikidata": "Q2818848",
+    "cuisine": "burger",
+    "name": "A&W"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7545800445,
+   "lat": 43.6707576,
+   "lon": -79.7772941,
+   "tags": {
+    "addr:housenumber": "550",
+    "addr:street": "Queen Street West",
+    "amenity": "pub",
+    "name": "Keenan's Irish Pub"
+   }
+  },
+  {
+   "type": "node",
+   "id": 10909775170,
+   "lat": 43.6962747,
+   "lon": -79.7479576,
+   "tags": {
+    "amenity": "restaurant",
+    "brand": "Wild Wing",
+    "brand:wikidata": "Q8000869",
+    "cuisine": "chicken",
+    "name": "Wild Wing"
+   }
+  },
+  {
+   "type": "node",
+   "id": 12810693289,
+   "lat": 43.7036847,
+   "lon": -79.7414564,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "A&W",
+    "brand:wikidata": "Q2818848",
+    "cuisine": "burger",
+    "name": "A&W"
+   }
+  },
+  {
+   "type": "way",
+   "id": 34342695,
+   "center": {
+    "lat": 43.696302,
+    "lon": -79.772751
+   },
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "McDonald's",
+    "brand:wikidata": "Q38076",
+    "cuisine": "burger",
+    "name": "McDonald's"
+   }
+  },
+  {
+   "type": "way",
+   "id": 48924335,
+   "center": {
+    "lat": 43.7028675,
+    "lon": -79.757595
+   },
+   "tags": {
+    "addr:housenumber": "225",
+    "addr:street": "Vodden Street East",
+    "amenity": "cafe",
+    "brand": "Tim Hortons",
+    "brand:wikidata": "Q175106",
+    "cuisine": "coffee_shop",
+    "name": "Tim Hortons"
+   }
+  },
+  {
+   "type": "way",
+   "id": 215626724,
+   "center": {
+    "lat": 43.7045271,
+    "lon": -79.7861071
+   },
+   "tags": {
+    "amenity": "restaurant",
+    "brand": "The Keg",
+    "brand:wikidata": "Q7744066",
+    "cuisine": "steak_house",
+    "name": "The Keg"
+   }
+  },
+  {
+   "type": "way",
+   "id": 275824537,
+   "center": {
+    "lat": 43.6937499,
+    "lon": -79.7712201
+   },
+   "tags": {
+    "addr:housenumber": "353",
+    "addr:street": "Main Street North",
+    "amenity": "fast_food",
+    "brand": "Wendy's",
+    "brand:wikidata": "Q550258",
+    "cuisine": "burger",
+    "name": "Wendy's"
+   }
+  },
+  {
+   "type": "way",
+   "id": 663049175,
+   "center": {
+    "lat": 43.7003833,
+    "lon": -79.7785667
+   },
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "A&W",
+    "brand:wikidata": "Q2818848",
+    "cuisine": "burger",
+    "name": "A&W"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7117880301,
+   "lat": 43.6854464,
+   "lon": -79.7595495,
+   "tags": {
+    "addr:housenumber": "23",
+    "addr:street": "Main Street South",
+    "amenity": "cafe",
+    "cuisine": "ice_cream;funnel_cake",
+    "name": "Ice Cream Cafe"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7195548285,
+   "lat": 43.6764584,
+   "lon": -79.771703,
+   "tags": {
+    "amenity": "fast_food",
+    "cuisine": "chicken;pizza",
+    "name": "786 Pizza & Wings"
+   }
+  },
+  {
+   "type": "node",
+   "id": 8620134937,
+   "lat": 43.6820105,
+   "lon": -79.7799625,
+   "tags": {
+    "addr:housenumber": "10",
+    "addr:street": "Flowertown Avenue",
+    "amenity": "fast_food",
+    "cuisine": "indian;american",
+    "name": "Munchers"
+   }
+  },
+  {
+   "type": "node",
+   "id": 887581941,
+   "lat": 43.6929929,
+   "lon": -79.7683062,
+   "tags": {
+    "addr:housenumber": "320",
+    "addr:street": "Main Street North",
+    "amenity": "restaurant",
+    "cuisine": "indian",
+    "name": "Punjabi Chaap Corner"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2295977905,
+   "lat": 43.686307,
+   "lon": -79.7607421,
+   "tags": {
+    "addr:housenumber": "35",
+    "addr:street": "Main Street North",
+    "amenity": "restaurant",
+    "cuisine": "indian",
+    "name": "Tadka King"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2305097012,
+   "lat": 43.6856377,
+   "lon": -79.7593981,
+   "tags": {
+    "amenity": "restaurant",
+    "cuisine": "vietnamese",
+    "name": "Pho Viet Nam"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2071048424,
+   "lat": 43.6877696,
+   "lon": -79.7587389,
+   "tags": {
+    "amenity": "pub",
+    "name": "Tracks Brewpub"
+   }
+  }
+ ]
+}
