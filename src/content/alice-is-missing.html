@@ -14,4 +14,10 @@
 
 <p>It is one Node process with no dependencies and no build step, small enough to run on a Pi Zero 2 W. It holds none of the game's card text, only the structure of the session. You still need your own copy of the game.</p>
 
+<h2>How it was built</h2>
+
+<p>Tariq started it from his phone with one request: an assistant for Alice is Missing, hosted on a Raspberry Pi, for playing at home with friends. He made the design calls in planning: phones plus a shared screen, a messenger whose private chats only their two players can read, and no card text in the code, so the tool is no substitute for owning the game.</p>
+
+<p>Then he set it up on his own hardware, with the table screen on a 2018 smart TV, and reported each failure precisely: the TV stuck on its "enable sound" screen, choppy audio, a timer too small to read across the room, and clue timings that didn't match his physical cards. Those reports led to a rewrite in older JavaScript the TV's browser could run, a bigger timer, and the clue fix.</p>
+
 <p><em>It runs on a local network rather than the public web. The source and Pi setup guide are on <a href="https://github.com/calsolum/portfolio/tree/portfolio/alice-is-missing">GitHub</a>.</em></p>

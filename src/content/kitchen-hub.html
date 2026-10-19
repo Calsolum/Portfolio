@@ -8,4 +8,10 @@
 
 <p>Built with Docker, Flask, Nginx, Home Assistant, Grocy, Mealie, and Tailscale for remote access. Full rebuild from backup takes under 30 minutes.</p>
 
+<h2>How it was built</h2>
+
+<p>Tariq designed the system and chose the hardware, then directed Claude to write the software: a first build in a Claude chat, followed by nine Claude Code sessions from late August to mid-October 2026. He picked the parts himself, from the Pi 5 and its cooler to the fridge-door touchscreen and a budget barcode scanner, and decided what to build next from daily use.</p>
+
+<p>Most of the work came from using it in the kitchen and reporting back exactly what went wrong. There was no keyboard to type a label, so it got an on-screen keyboard. Label printing took almost a minute, so it was sped up and given a progress bar. Lifting a finger after a scroll opened whatever icon sat underneath, so that gesture was removed. Every fix was tested on the real device before the next one started.</p>
+
 <p><em>Kitchen Hub runs on a private home network and is not publicly reachable — the source is on <a href="https://github.com/Calsolum/kitchen-hub">GitHub</a>.</em></p>
