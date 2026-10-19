@@ -57,8 +57,8 @@ export default function Home() {
             Let&apos;s talk.
           </h2>
           <p className="mt-6 max-w-lg font-mono text-sm leading-relaxed text-muted">
-            For commissions, collaborations, publishing inquiries, or just to say hello. These
-            works are in progress — if you&apos;re a publisher, agent, or fellow reader who&apos;d
+            Open to editorial and writing roles, and to commissions, collaborations, and
+            publishing inquiries. If you&apos;re a publisher, agent, or fellow reader who&apos;d
             like to read further chapters, get in touch.
           </p>
 
@@ -69,7 +69,15 @@ export default function Home() {
             {profile.email}
           </a>
 
-          <div className="mt-10">
+          <div className="mt-10 flex flex-wrap gap-4">
+            <a
+              href={profile.resume}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="border border-accent bg-accent px-6 py-3 font-mono text-xs uppercase tracking-[0.15em] text-bg transition-opacity hover:opacity-85"
+            >
+              Download resume (PDF)
+            </a>
             <Link
               href="/about"
               className="border border-edge px-6 py-3 font-mono text-xs uppercase tracking-[0.15em] text-ink transition-colors hover:border-accent hover:text-accent"

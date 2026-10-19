@@ -52,11 +52,11 @@ export interface Section {
 
 export const profile = {
   name: "Tariq Singh",
-  role: "Writer & Storyteller",
+  role: "Writer & Editor",
   location: "Brampton, Ontario",
   tagline: "Words in every medium",
   intro:
-    "From interactive fiction to poetry, novel to stage — a body of work that refuses to stay in one genre.",
+    "Editor and writer with a degree in Creative Writing and Publishing. Two years editing for publication, a 30-person anthology led to print, and a body of work that runs from interactive fiction to poetry, novel to stage.",
   email: "tariq@tariqsingh.ca",
   // Phone number and street address from the resume are deliberately not published here.
   links: {

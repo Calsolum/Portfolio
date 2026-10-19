@@ -17,7 +17,7 @@ export function Footer() {
             Tariq<span className="text-accent">Singh</span>
           </p>
           <p className="mt-1 font-mono text-xs uppercase tracking-[0.15em] text-muted">
-            Writer · Developer · Storyteller
+            Writer · Editor · Developer
           </p>
         </div>
 
