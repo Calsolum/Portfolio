@@ -52,11 +52,11 @@ export interface Section {
 
 export const profile = {
   name: "Tariq Singh",
-  role: "Writer & Storyteller",
+  role: "Writer & Editor",
   location: "Brampton, Ontario",
   tagline: "Words in every medium",
   intro:
-    "From interactive fiction to poetry, novel to stage — a body of work that refuses to stay in one genre.",
+    "Editor and writer with a degree in Creative Writing and Publishing. Two years editing for publication, a 30-person anthology led to print, and a body of work that runs from interactive fiction to poetry, novel to stage.",
   email: "tariq@tariqsingh.ca",
   // Phone number and street address from the resume are deliberately not published here.
   links: {
@@ -116,7 +116,7 @@ export const sections: Section[] = [
     title: "Technical",
     titleLine2: "Projects",
     intro:
-      "Six projects built from scratch — a self-hosted smart home system, a digital party game, a board game companion app, a Raspberry Pi game assistant, a team planner for Fate/Grand Order, and a finder for weekday food deals.",
+      "Seven projects built with Claude as the coding partner: Tariq writes the brief, makes the design calls and tests on real devices, and Claude writes the code. A self-hosted smart home system, a digital party game, a board game companion app, a Raspberry Pi game assistant, a team planner for Fate/Grand Order, a finder for weekday food deals, and add-ons for a car dashcam.",
   },
 ];
 
@@ -317,6 +317,18 @@ export const projects: Project[] = [
     app: "/deals",
     readable: true,
   },
+  {
+    slug: "teslausb-dashcam",
+    title: "TeslaUSB Dashcam Add-ons",
+    category: "projects",
+    kind: "Raspberry Pi · Car Dashcam",
+    blurb:
+      "Fixes and add-ons for TeslaUSB, an open-source project that turns a Raspberry Pi into a car's dashcam drive. Tracked down why the SD card kept filling, tuned snapshot retention, and added a pipeline that merges every camera's clips into single videos on the home PC after each upload.",
+    stack: "Linux · systemd · Bash · Python · ffmpeg · Windows Task Scheduler",
+    tags: ["Raspberry Pi", "Linux", "ffmpeg"],
+    // Runs in a car and on a home network, and the scripts aren't published, so there is nothing to link to.
+    readable: true,
+  },
 ];
 
 export const stats = [
@@ -326,7 +338,7 @@ export const stats = [
   { value: "1", label: "Novella" },
   { value: "1", label: "Stage Adaptation" },
   { value: "1", label: "Film Script" },
-  { value: "6", label: "Projects" },
+  { value: "7", label: "Projects" },
 ];
 
 export interface ExperienceEntry {

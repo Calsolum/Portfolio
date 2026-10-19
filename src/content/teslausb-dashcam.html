@@ -1,0 +1,17 @@
+<p><em>Raspberry Pi · Car Dashcam</em></p>
+
+<p>A Tesla records dashcam footage to a USB drive. TeslaUSB, an open-source project, puts a Raspberry Pi Zero 2 W in place of that drive and copies the footage home over Wi-Fi. These are the fixes and add-ons built on top of it.</p>
+
+<hr />
+
+<p>The Pi's SD card had filled to 86% with old snapshots. The fix was tracking down the snapshot cycle behind it, tuning how long snapshots are kept, and rebuilding the dashcam disk image, working around a bug in the project's own rebuild script.</p>
+
+<p>The add-on is an automatic clip merger. The car saves each camera as a separate one-minute clip. Now, after each upload, the Pi leaves a signal for a scheduled task on the home PC, which merges the clips from every camera into single videos with ffmpeg and files them in their own folder.</p>
+
+<h2>How it was built</h2>
+
+<p>Tariq brought the problem ("why is the memory so full?") and made the calls: which features to add, where merged videos go, and to skip merging the old backlog. He tested each change in the car and reported back. When the car stopped seeing the drive, and later when a smaller disk image filled after a few hours of driving, his reports set the next fix.</p>
+
+<p><strong>Tech stack:</strong> Linux · systemd · Bash · Python · ffmpeg · Windows Task Scheduler</p>
+
+<p><em>This runs in a car and on a home network, so there is nothing public to link to.</em></p>

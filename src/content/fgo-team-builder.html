@@ -19,4 +19,10 @@
 
 <p>Plans are ranked by fewest turns, then fewest skill taps, then the widest damage margin. When nothing works, it shows the teams that came closest and why each fell short.</p>
 
+<h2>How it was built</h2>
+
+<p>Tariq described the problem from his phone: after years of play he had too many servants and craft essences to plan farming teams by hand, and a plan that overshoots the damage is better than one that relies on a lucky roll. That last point became the rule that every damage check uses the lowest random roll.</p>
+
+<p>In planning he chose live game data over a bundled snapshot, picking quests from the database rather than typing enemies in, and ranking by fewest turns and then fewest skill taps. Claude built it in a single session, and the engine is covered by unit tests and an end-to-end test at phone width.</p>
+
 <p><strong>Tech stack:</strong> Next.js · TypeScript · Web Workers · IndexedDB · Atlas Academy API · Vitest</p>

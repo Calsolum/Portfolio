@@ -50,6 +50,14 @@ export function Hero() {
             >
               Play the projects
             </Link>
+            <a
+              href={profile.resume}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="border border-edge px-6 py-3 font-mono text-xs uppercase tracking-[0.15em] text-ink transition-colors hover:border-accent hover:text-accent"
+            >
+              Resume
+            </a>
           </div>
         </div>
 
