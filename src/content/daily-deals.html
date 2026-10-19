@@ -25,4 +25,10 @@
 
 <p>Web search is the only part that costs money, so it is bounded: a few searches per request, a time limit, a rate limit, and a week-long cache so that repeat visits cost nothing.</p>
 
+<h2>How it was built</h2>
+
+<p>Tariq's brief was one sentence: show any daily deals from food places near the user's current or entered location. In planning he narrowed it to weekday specials and chose a hybrid of a hand-checked list and an on-demand web search.</p>
+
+<p>He also held the paid part back: "let's get everything else working before committing." So the web search ships switched off, its panel stays hidden until it is turned on, and the free, checked list carries the page. The page was tested live in a browser for places in Ontario and Texas, and 187 tests cover the deals code.</p>
+
 <p><strong>Tech stack:</strong> Next.js · TypeScript · OpenStreetMap (Overpass, Nominatim) · Claude API (web search and web fetch) · Vitest</p>

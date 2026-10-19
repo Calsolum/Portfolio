@@ -10,6 +10,12 @@
 
 <p>Next: AI-powered card generation via the Anthropic API to expand the monster and treasure decks dynamically.</p>
 
+<h2>How it was built</h2>
+
+<p>This single file is the first version. Tariq then had Claude turn it into a multiplayer version that runs on a Raspberry Pi Zero 2 W, so each player joins from their own phone, tablet or PC. That version uses the full official card set, checked card by card against the rulebook and the printed cards, and its code is kept private.</p>
+
+<p>Tariq made the rules calls and set the priorities: base game first, extra cards kept as "Homebrew", one equipped item per slot, and a playtest mode that simulates any number of players from one window, because he didn't always have several devices to hand. He tested on three real devices and sent back precise corrections. When a hero's card text was wrong he supplied the exact wording, and when the Swap card could be chained forever he caught it and had it fixed.</p>
+
 <p><strong>Tech stack:</strong> Vanilla HTML · CSS · JavaScript · No dependencies</p>
 
 <p><a href="/apps/drunkquest.html">Play DrunkQuest in your browser →</a></p>
