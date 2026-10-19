@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     template: `%s — ${profile.name}`,
   },
   description:
-    "Interactive fiction, novels, poetry, stage and screen scripts, and self-built technical projects by Tariq Singh.",
+    "Editor and writer Tariq Singh: interactive fiction, novels, poetry, stage and screen scripts, and self-built technical projects.",
   openGraph: {
     title: `${profile.name} — ${profile.role}`,
     description: profile.intro,

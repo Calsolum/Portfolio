@@ -9,7 +9,7 @@ import { getContent } from "@/lib/content";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Writer and self-taught technical implementer with a Creative Writing and Publishing degree and a Computer Programming diploma.",
+    "Editor and writer with a Creative Writing and Publishing degree, publication editing experience, and a Computer Programming diploma.",
 };
 
 export default function Page() {
