@@ -370,7 +370,7 @@ export const experience: ExperienceEntry[] = [
   {
     role: "Editorial Project Lead",
     org: "Sheridan College Graduate Anthology",
-    period: "6-month project",
+    period: "2022 (6 months)",
     bullets: [
       "Led a 30-member team through publication of a graduate anthology spanning multiple genres.",
       "Held the project to its timelines and quality standards from submission through print.",
