@@ -350,7 +350,15 @@ export interface ExperienceEntry {
 
 export const experience: ExperienceEntry[] = [
   {
-    role: "Editor",
+    role: "Legal File Clerk",
+    org: "Bhacepatti Singh & Co., Trinidad and Tobago",
+    period: "Sept 2018 – Present",
+    bullets: [
+      "Organise, maintain and retrieve client and case files and legal correspondence.",
+    ],
+  },
+  {
+    role: "Senior Content Editor",
     org: "Mobile Gaming News Network",
     period: "Jul 2019 – Aug 2020",
     bullets: [
@@ -374,6 +382,7 @@ export const experience: ExperienceEntry[] = [
     bullets: [
       "Led a 30-member team through publication of a graduate anthology spanning multiple genres.",
       "Held the project to its timelines and quality standards from submission through print.",
+      "Managed the project's budget allocation.",
     ],
   },
   {
