@@ -8,11 +8,11 @@
 
 <h2>Where the deals come from</h2>
 
-<p>There is no public feed of restaurant specials, so the page draws on two sources and labels each card with the one it came from.</p>
+<p>There is no public feed of restaurant specials, so the page was designed around two sources, each card labelled with the one it came from. Only the first is switched on today.</p>
 
 <ul>
 <li><strong>A checked list.</strong> A short list of deals read off each restaurant's or chain's own website and typed in by hand, each with the date it was last checked. After 90 days a card is marked as possibly out of date. Only deals tied to a day of the week make the list: no every-day happy hours, no limited-time promotions.</li>
-<li><strong>A web search.</strong> A button hands the area to Claude through the Anthropic API's web search and web fetch tools. It searches, reads the most promising pages and reports the weekday deals it can source. The server keeps a deal only if its link is a page the search actually returned, so a made-up source cannot get through.</li>
+<li><strong>A web search (built, switched off).</strong> When it is turned on, a button hands the area to Claude through the Anthropic API's web search and web fetch tools. It searches, reads the most promising pages and reports the weekday deals it can source. The server keeps a deal only if its link is a page the search actually returned, so a made-up source cannot get through. Until then the button is hidden and the page shows only the checked list.</li>
 </ul>
 
 <h2>Finding what is nearby</h2>
@@ -21,9 +21,9 @@
 
 <h2>Privacy and cost</h2>
 
-<p>Your position stays in your browser. Looking up places sends OpenStreetMap a position rounded to about 100 metres. A web search tells this site only which 5 km grid square you are in, and one search is shared by everyone in that square for a week.</p>
+<p>Your position stays in your browser. Looking up places sends OpenStreetMap a position rounded to about 100 metres. Once web search is on, it will tell this site only which 5 km grid square you are in, and one search will be shared by everyone in that square for a week.</p>
 
-<p>Web search is the only part that costs money, so it is bounded: a few searches per request, a time limit, a rate limit, and a week-long cache so that repeat visits cost nothing.</p>
+<p>Web search is the only part that would cost money, so it is bounded before it is ever switched on: a few searches per request, a time limit, a rate limit, and a week-long cache so that repeat visits cost nothing.</p>
 
 <h2>How it was built</h2>
 
