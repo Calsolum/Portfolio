@@ -351,7 +351,7 @@ export interface ExperienceEntry {
 export const experience: ExperienceEntry[] = [
   {
     role: "Legal File Clerk",
-    org: "Bhacepatti Singh & Co., Trinidad and Tobago",
+    org: "Bhacepatti Singh & Co., Trinidad and Tobago (remote)",
     period: "Sep 2018 – Present",
     bullets: [
       "Open, organise and maintain client and case files so documents can be found when they are needed.",
