@@ -21,4 +21,10 @@
 
 <p>A game is stored as a list of actions rather than a board, and the board is replayed from that list. This makes undo exact, scoring included, and it is what lets a game be shared. Every phone that joins by QR code sends its taps, the server keeps them in one order, and each phone replays the same list. Taps made on a weak connection wait and go out when it comes back.</p>
 
+<h2>How it was built</h2>
+
+<p>Tariq's brief was one line: build a Smash Up base tracker. In planning he made it a page on this site, chose every base from every set over typing numbers in at the table, and took all four extras on offer: minion counts, power that ends with the turn, factions per player and a history of games. Asked whether it should run on one shared phone or on everyone's phone in step, he answered "Can I do both", so it does both.</p>
+
+<p>The base list was read from the Smash Up Wiki through its API, and tests check every set against the wiki's counts. The tracker was tested in a browser through a full game and at phone width, with two browser tabs standing in for two phones, and 91 tests cover its code.</p>
+
 <p><strong>Tech stack:</strong> Next.js · TypeScript · Upstash Redis · Vitest</p>
