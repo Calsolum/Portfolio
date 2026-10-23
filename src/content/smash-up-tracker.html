@@ -4,7 +4,9 @@
 
 <hr />
 
-<p>The tracker holds the arithmetic. You set the game up once: the players, their two factions, and the starting bases. As cards are played you tap in power, power that only lasts until the end of the turn, and minions, base by base. A base lights up when it reaches its breakpoint, and scoring it shows who placed where and what each player earns, ready to confirm.</p>
+<p>The tracker holds the arithmetic. You set the game up once: the players, their two factions, and the starting bases. As cards are played you tap in power, power that only lasts until the end of the turn, and minions, base by base; a power pad enters a minion and its power in one tap. A base lights up when it reaches its breakpoint, and scoring it shows who placed where and what each player earns, ready to confirm.</p>
+
+<p>Around that sit the rest of a game night: the turn can be handed to any player for extra turns, Madness is counted and charged at the end, finished games build up stats per player and faction, a rematch keeps the same seats, and once opened the page works with no signal.</p>
 
 <h2>Scoring by the rulebook</h2>
 
@@ -25,6 +27,8 @@
 
 <p>Tariq's brief was one line: build a Smash Up base tracker. In planning he made it a page on this site, chose every base from every set over typing numbers in at the table, and took all four extras on offer: minion counts, power that ends with the turn, factions per player and a history of games. Asked whether it should run on one shared phone or on everyone's phone in step, he answered "Can I do both", so it does both.</p>
 
-<p>The base list was read from the Smash Up Wiki through its API, and tests check every set against the wiki's counts. The tracker was tested in a browser through a full game and at phone width, with two browser tabs standing in for two phones, and 91 tests cover its code.</p>
+<p>Before it went live he put the finished tracker through a review that questioned each assumption. It showed that entering a minion took five taps and that an extra turn could not be recorded, so he chose a power pad and handing over the turn, and added Madness, stats, rematches and use without a signal.</p>
+
+<p>The base list was read from the Smash Up Wiki through its API, and tests check every set against the wiki's counts. The tracker was tested in a browser through full games, at phone width and offline, with two browser tabs standing in for two phones, and 110 tests cover its code.</p>
 
 <p><strong>Tech stack:</strong> Next.js · TypeScript · Upstash Redis · Vitest</p>

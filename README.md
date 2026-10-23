@@ -175,11 +175,20 @@ browser.
 
 ## Smash Up Base Tracker (`/smash-up`)
 
-A table-side tracker for Smash Up: power, power until the end of the turn and minions on every base,
-scoring by the rulebook (ties, who is eligible, and seven bases whose extra VP it can work out), VP
-to the target, factions per player and a history of finished games. A game is stored as a list of
-actions and the board is replayed from it, which is what makes undo exact and sharing safe. The
-logic is in `src/smashup/lib/` and is covered by `npm test`.
+A table-side tracker for Smash Up: power, power until the end of the turn and minions on every base
+(a minion and its power can be entered in one tap from a power pad), scoring by the rulebook (ties,
+who is eligible, and seven bases whose extra VP it can work out), VP to the target, the turn handed
+to any player for extra turns, Madness with its end-of-game VP cost, factions per player, a history
+of finished games with stats and rematches. A game is stored as a list of actions and the board is
+replayed from it, which is what makes undo exact and sharing safe. The logic is in
+`src/smashup/lib/` and is covered by `npm test`.
+
+**Opening with no signal.** `public/smash-up-sw.js` is a service worker scoped to `/smash-up`,
+registered only in production builds. It fetches the page from the network first and falls back to
+its stored copy, with the build files that copy needs, so the page opens offline once it has been
+opened online; sharing still needs a connection. To retire it, replace the file with one that calls
+`self.registration.unregister()` and deletes its caches, since a deleted file leaves installed
+copies running.
 
 **Switching on shared games.** One phone works with nothing set up. To let every phone at the table
 join a game by code or QR, the site needs a small Redis database:

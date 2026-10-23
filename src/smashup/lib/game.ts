@@ -22,6 +22,8 @@ import { effectivePower } from "./scoring";
  */
 
 const MAX_TEMP = 99;
+/** The Madness deck has 30 cards. */
+const MAX_MADNESS = 30;
 
 const newBase = (entryId: string, slot: number, base: BaseSnapshot, players: readonly PlayerInfo[]): BaseInPlay => ({
   key: `${entryId}:${slot}`,
@@ -51,6 +53,14 @@ function describe(state: GameState, action: Action): string {
       return `${who(action.player)} ${signed(action.delta)} power this turn on ${where(action.base)}`;
     case "minions":
       return `${who(action.player)} ${signed(action.delta)} ${Math.abs(action.delta) === 1 ? "minion" : "minions"} on ${where(action.base)}`;
+    case "minion":
+      return action.delta > 0
+        ? `${who(action.player)} played a ${action.power}-power minion on ${where(action.base)}`
+        : `${who(action.player)} lost a ${action.power}-power minion from ${where(action.base)}`;
+    case "turn":
+      return `Turn handed to ${who(action.player)}`;
+    case "madness":
+      return `${who(action.player)} ${signed(action.delta)} Madness`;
     case "breakpoint":
       return `${where(action.base)} breakpoint ${signed(action.delta)}`;
     case "vp":
@@ -71,12 +81,30 @@ function describe(state: GameState, action: Action): string {
   }
 }
 
-/** Checked at the end of each turn: the most VP wins once anyone reaches the target, unless the lead is shared. */
+/**
+ * Checked at the end of each turn. The game ends once one player has more VP
+ * than everyone else and at least the target; a shared lead plays on. With
+ * Madness, each player then loses 1 VP for every two Madness cards, the
+ * highest total wins even if it is under the target, a tie goes to the player
+ * with fewer Madness cards, and players still level share the win.
+ */
 function resultAfterTurn(state: GameState, at: number): GameResult | null {
   const best = Math.max(...state.players.map((player) => state.vp[player.id]));
   if (best < state.target) return null;
   const leaders = state.players.filter((player) => state.vp[player.id] === best).map((player) => player.id);
-  return leaders.length === 1 ? { kind: "won", winner: leaders[0], at } : { kind: "tied", leaders };
+  if (leaders.length > 1) return { kind: "tied", leaders };
+
+  const madness = state.madness;
+  const final = Object.fromEntries(
+    state.players.map((player) => [player.id, state.vp[player.id] - Math.floor((madness?.[player.id] ?? 0) / 2)]),
+  );
+  const top = Math.max(...Object.values(final));
+  let winners = state.players.map((player) => player.id).filter((id) => final[id] === top);
+  if (madness && winners.length > 1) {
+    const fewest = Math.min(...winners.map((id) => madness[id]));
+    winners = winners.filter((id) => madness[id] === fewest);
+  }
+  return { kind: "won", winners, at, final };
 }
 
 /** Applies one entry. Returns false when it no longer fits and nothing changed. */
@@ -95,6 +123,28 @@ function apply(state: GameState, entry: Entry): boolean {
           ? Math.max(-MAX_TEMP, Math.min(MAX_TEMP, before + action.delta))
           : Math.max(0, before + action.delta);
       return counts[action.type] !== before;
+    }
+    case "minion": {
+      const counts = findBase(state, action.base)?.counts[action.player];
+      // A minion can only be lost from where there is one.
+      if (!counts || (action.delta < 0 && counts.minions === 0)) return false;
+      const before = `${counts.minions}/${counts.power}`;
+      counts.minions = Math.max(0, counts.minions + action.delta);
+      counts.power = Math.max(0, counts.power + action.delta * action.power);
+      return `${counts.minions}/${counts.power}` !== before;
+    }
+    case "turn": {
+      const seat = state.players.findIndex((player) => player.id === action.player);
+      if (seat < 0 || seat === state.turn.player) return false;
+      state.turn = { ...state.turn, player: seat };
+      return true;
+    }
+    case "madness": {
+      const madness = state.madness;
+      if (!madness || !(action.player in madness)) return false;
+      const before = madness[action.player];
+      madness[action.player] = Math.max(0, Math.min(MAX_MADNESS, before + action.delta));
+      return madness[action.player] !== before;
     }
     case "breakpoint": {
       const base = findBase(state, action.base);
@@ -157,7 +207,7 @@ function apply(state: GameState, entry: Entry): boolean {
 export function replay(entries: readonly Entry[]): GameState | null {
   const setup = entries[0];
   if (setup?.action.type !== "setup") return null;
-  const { players, bases, target, first } = setup.action;
+  const { players, bases, target, first, madness } = setup.action;
 
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
   const undone = new Set<string>();
@@ -173,6 +223,8 @@ export function replay(entries: readonly Entry[]): GameState | null {
     startedAt: setup.at,
     players,
     target,
+    first,
+    madness: madness ? Object.fromEntries(players.map((player) => [player.id, 0])) : null,
     slots: bases.map((base, slot) => newBase(setup.id, slot, base, players)),
     vp: Object.fromEntries(players.map((player) => [player.id, 0])),
     turn: { player: first, number: 1 },

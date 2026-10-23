@@ -22,6 +22,8 @@ export const MAX_BASE_NAME = 48;
 export const MAX_BASES = 8;
 export const MAX_DELTA = 50;
 export const MAX_TARGET = 99;
+/** The power pad goes to 11; no printed minion comes close, but effects can. */
+export const MAX_MINION_POWER = 20;
 const MAX_NUMBER = 99;
 
 const BONUSES: readonly BaseBonus[] = [
@@ -108,7 +110,9 @@ function parseSetup(value: Record<string, unknown>): Action | null {
   const target = int(value.target, 1, MAX_TARGET);
   const first = int(value.first, 0, players.length - 1);
   if (target === null || first === null) return null;
-  return { type: "setup", players, bases, target, first };
+  return value.madness === true
+    ? { type: "setup", players, bases, target, first, madness: true }
+    : { type: "setup", players, bases, target, first };
 }
 
 function parseAwards(value: unknown): Award[] | null {
@@ -136,11 +140,20 @@ export function parseAction(value: unknown): Action | null {
       if (!matches(value.base, BASE_KEY) || !matches(value.player, PLAYER_ID) || !change) return null;
       return { type, base: value.base, player: value.player, delta: change };
     }
+    case "minion": {
+      const power = int(value.power, 0, MAX_MINION_POWER);
+      const sign = value.delta === 1 || value.delta === -1 ? value.delta : null;
+      if (!matches(value.base, BASE_KEY) || !matches(value.player, PLAYER_ID) || power === null || !sign) return null;
+      return { type, base: value.base, player: value.player, delta: sign, power };
+    }
+    case "turn":
+      return matches(value.player, PLAYER_ID) ? { type, player: value.player } : null;
     case "breakpoint": {
       const change = delta(value.delta);
       return matches(value.base, BASE_KEY) && change ? { type, base: value.base, delta: change } : null;
     }
-    case "vp": {
+    case "vp":
+    case "madness": {
       const change = delta(value.delta);
       return matches(value.player, PLAYER_ID) && change ? { type, player: value.player, delta: change } : null;
     }

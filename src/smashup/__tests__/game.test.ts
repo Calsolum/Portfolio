@@ -22,6 +22,8 @@ describe("setup", () => {
     expect(countsAt(state, 0, "p2")).toEqual({ power: 0, temp: 0, minions: 0 });
     expect(state.vp).toEqual({ p1: 0, p2: 0, p3: 0 });
     expect(state.turn).toEqual({ player: 0, number: 1 });
+    expect(state.first).toBe(0);
+    expect(state.madness).toBeNull();
     expect(state.seen).toEqual(["tortuga", "jungle-oasis", "ninja-dojo", "the-homeworld"]);
     expect(state.result).toBeNull();
     expect(state.log.map((line) => line.text)).toEqual(["New game: Alex, Sam, Kim"]);
@@ -195,7 +197,12 @@ describe("turns and the end of the game", () => {
     game.add({ type: "vp", player: "p2", delta: 15 });
     expect(play(game.entries).result).toBeNull();
     game.add({ type: "endTurn" });
-    expect(play(game.entries).result).toEqual({ kind: "won", winner: "p2", at: 1_002 });
+    expect(play(game.entries).result).toEqual({
+      kind: "won",
+      winners: ["p2"],
+      at: 1_002,
+      final: { p1: 0, p2: 15, p3: 0 },
+    });
   });
 
   it("plays on while the lead is shared, then names the winner", () => {
@@ -206,7 +213,7 @@ describe("turns and the end of the game", () => {
     expect(play(game.entries).result).toEqual({ kind: "tied", leaders: ["p1", "p3"] });
     game.add({ type: "vp", player: "p3", delta: 1 });
     game.add({ type: "endTurn" });
-    expect(play(game.entries).result).toMatchObject({ kind: "won", winner: "p3" });
+    expect(play(game.entries).result).toMatchObject({ kind: "won", winners: ["p3"] });
   });
 
   it("keeps a win once it is declared", () => {
@@ -215,7 +222,141 @@ describe("turns and the end of the game", () => {
     game.add({ type: "endTurn" });
     game.add({ type: "vp", player: "p2", delta: 20 });
     game.add({ type: "endTurn" });
-    expect(play(game.entries).result).toMatchObject({ kind: "won", winner: "p1" });
+    expect(play(game.entries).result).toMatchObject({ kind: "won", winners: ["p1"] });
+  });
+});
+
+describe("minions with their power", () => {
+  it("adds a played minion and its power as one change, and undoes it as one", () => {
+    const game = script();
+    const played = game.add({ type: "minion", base: slotKey(0), player: "p1", delta: 1, power: 3 });
+    let state = play(game.entries);
+    expect(countsAt(state, 0, "p1")).toEqual({ power: 3, temp: 0, minions: 1 });
+    expect(textOf(state, played)).toBe("Alex played a 3-power minion on Tortuga");
+
+    game.add({ type: "undo", target: played });
+    state = play(game.entries);
+    expect(countsAt(state, 0, "p1")).toEqual({ power: 0, temp: 0, minions: 0 });
+  });
+
+  it("takes a lost minion's power away too, never below 0", () => {
+    const game = script();
+    game.add({ type: "minion", base: slotKey(0), player: "p1", delta: 1, power: 2 });
+    const lost = game.add({ type: "minion", base: slotKey(0), player: "p1", delta: -1, power: 5 });
+    const state = play(game.entries);
+    expect(countsAt(state, 0, "p1")).toEqual({ power: 0, temp: 0, minions: 0 });
+    expect(textOf(state, lost)).toBe("Alex lost a 5-power minion from Tortuga");
+  });
+
+  it("skips losing a minion where there is none", () => {
+    const game = script();
+    game.add({ type: "power", base: slotKey(0), player: "p2", delta: 4 });
+    const lost = game.add({ type: "minion", base: slotKey(0), player: "p2", delta: -1, power: 2 });
+    const state = play(game.entries);
+    expect(statusOf(state, lost)).toBe("skipped");
+    expect(countsAt(state, 0, "p2")?.power).toBe(4);
+  });
+
+  it("counts a 0-power minion", () => {
+    const game = script();
+    game.add({ type: "minion", base: slotKey(1), player: "p3", delta: 1, power: 0 });
+    expect(countsAt(play(game.entries), 1, "p3")).toEqual({ power: 0, temp: 0, minions: 1 });
+  });
+});
+
+describe("handing over the turn", () => {
+  it("makes another player active without changing the turn count", () => {
+    const game = script();
+    game.add({ type: "endTurn" });
+    const handed = game.add({ type: "turn", player: "p3" });
+    let state = play(game.entries);
+    expect(state.turn).toEqual({ player: 2, number: 2 });
+    expect(textOf(state, handed)).toBe("Turn handed to Kim");
+
+    // End turn carries on round the table from whoever has the turn.
+    game.add({ type: "endTurn" });
+    state = play(game.entries);
+    expect(state.turn).toEqual({ player: 0, number: 3 });
+  });
+
+  it("skips handing the turn to the active player or to nobody", () => {
+    const game = script();
+    const same = game.add({ type: "turn", player: "p1" });
+    const nobody = game.add({ type: "turn", player: "p6" });
+    const state = play(game.entries);
+    expect(statusOf(state, same)).toBe("skipped");
+    expect(statusOf(state, nobody)).toBe("skipped");
+  });
+});
+
+describe("Madness", () => {
+  const withMadness = () => {
+    const game = script();
+    const setup = game.entries[0].action;
+    if (setup.type === "setup") setup.madness = true;
+    return game;
+  };
+
+  it("is counted only in a game played with the Madness deck", () => {
+    const plain = script();
+    const ignored = plain.add({ type: "madness", player: "p1", delta: 2 });
+    expect(statusOf(play(plain.entries), ignored)).toBe("skipped");
+
+    const game = withMadness();
+    game.add({ type: "madness", player: "p1", delta: 3 });
+    game.add({ type: "madness", player: "p2", delta: -1 });
+    game.add({ type: "madness", player: "p3", delta: 40 });
+    const state = play(game.entries);
+    expect(state.madness).toEqual({ p1: 3, p2: 0, p3: 30 });
+    expect(state.log.at(1)?.text).toBe("Alex +3 Madness");
+  });
+
+  it("takes 1 VP per two Madness cards when the game ends, and the highest total wins", () => {
+    const game = withMadness();
+    game.add({ type: "vp", player: "p1", delta: 16 });
+    game.add({ type: "vp", player: "p2", delta: 14 });
+    game.add({ type: "madness", player: "p1", delta: 5 });
+    game.add({ type: "endTurn" });
+    // Alex ends the game on 16, but 5 Madness cost 2: Sam wins on 14 against Alex's 14 by having less Madness.
+    expect(play(game.entries).result).toEqual({
+      kind: "won",
+      winners: ["p2"],
+      at: 1_004,
+      final: { p1: 14, p2: 14, p3: 0 },
+    });
+  });
+
+  it("can crown a winner below the target", () => {
+    const game = withMadness();
+    game.add({ type: "vp", player: "p1", delta: 15 });
+    game.add({ type: "vp", player: "p3", delta: 13 });
+    game.add({ type: "madness", player: "p1", delta: 6 });
+    game.add({ type: "endTurn" });
+    expect(play(game.entries).result).toMatchObject({ winners: ["p3"], final: { p1: 12, p3: 13 } });
+  });
+
+  it("shares the win when players are level on VP and on Madness", () => {
+    const game = withMadness();
+    game.add({ type: "vp", player: "p1", delta: 16 });
+    game.add({ type: "vp", player: "p2", delta: 14 });
+    game.add({ type: "vp", player: "p3", delta: 14 });
+    game.add({ type: "madness", player: "p1", delta: 10 });
+    game.add({ type: "madness", player: "p2", delta: 2 });
+    game.add({ type: "madness", player: "p3", delta: 2 });
+    game.add({ type: "endTurn" });
+    expect(play(game.entries).result).toMatchObject({
+      winners: ["p2", "p3"],
+      final: { p1: 11, p2: 13, p3: 13 },
+    });
+  });
+
+  it("still plays on while the lead before Madness is shared", () => {
+    const game = withMadness();
+    game.add({ type: "vp", player: "p1", delta: 15 });
+    game.add({ type: "vp", player: "p2", delta: 15 });
+    game.add({ type: "madness", player: "p1", delta: 4 });
+    game.add({ type: "endTurn" });
+    expect(play(game.entries).result).toEqual({ kind: "tied", leaders: ["p1", "p2"] });
   });
 });
 
