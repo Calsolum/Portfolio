@@ -7,7 +7,7 @@ import { Button, Notice, Panel } from "@/components/ui/controls";
 import { FACTIONS } from "../data/factions";
 import { SETS, type SetKind } from "../data/sets";
 import { MAX_PLAYER_NAME, cleanName } from "../lib/actions";
-import { ALL_SET_IDS, SET_BY_ID, ownedIn } from "../lib/catalog";
+import { ALL_SET_IDS, FACTION_BY_ID, SET_BY_ID, ownedIn } from "../lib/catalog";
 import { MAX_PLAYERS, MIN_PLAYERS, type Action, type BaseSnapshot, type PlayerInfo } from "../types";
 import { BasePicker } from "./BasePicker";
 import { ConfirmButton, PlayerDot, Stepper, vpText } from "./common";
@@ -24,7 +24,21 @@ interface Seat {
   factions: [string, string];
 }
 
-const seat = (name = ""): Seat => ({ name, factions: ["", ""] });
+const seat = (name = "", factions: readonly string[] = []): Seat => ({
+  name,
+  factions: [factions[0] ?? "", factions[1] ?? ""],
+});
+
+/** A rematch: the same players, factions, seats and settings, with the bases picked afresh. */
+export interface SetupPreset {
+  players: { name: string; factions: string[] }[];
+  target: number;
+  first: number;
+  madness: boolean;
+}
+
+/** The Madness deck comes with the Cthulhu set; its factions are the ones that use it. */
+const MADNESS_SET = "obligatory-cthulhu";
 
 function OwnedSets({ owned, onChange }: { owned: string[]; onChange: (owned: string[]) => void }) {
   const set = new Set(owned);
@@ -65,6 +79,7 @@ function OwnedSets({ owned, onChange }: { owned: string[]; onChange: (owned: str
 export function SetupPanel({
   owned,
   lastNames,
+  preset,
   inProgress,
   onOwnedChange,
   onStart,
@@ -72,6 +87,8 @@ export function SetupPanel({
 }: {
   owned: string[];
   lastNames: string[];
+  /** Fills the form for a rematch. */
+  preset?: SetupPreset | null;
   /** A game is going, so starting another replaces it. */
   inProgress: boolean;
   onOwnedChange: (owned: string[]) => void;
@@ -80,12 +97,14 @@ export function SetupPanel({
   join?: ReactNode;
 }) {
   const [seats, setSeats] = useState<Seat[]>(() => {
+    if (preset) return preset.players.map((player) => seat(player.name, player.factions));
     const names = lastNames.length >= MIN_PLAYERS ? lastNames : ["", "", ""];
     return names.map((name) => seat(name));
   });
   const [bases, setBases] = useState<(BaseSnapshot | null)[]>(() => Array(seats.length + 1).fill(null));
-  const [target, setTarget] = useState(15);
-  const [first, setFirst] = useState(0);
+  const [target, setTarget] = useState(preset?.target ?? 15);
+  const [first, setFirst] = useState(preset ? Math.min(preset.first, seats.length - 1) : 0);
+  const [madness, setMadness] = useState(preset?.madness ?? false);
   const [choosing, setChoosing] = useState<number | null>(null);
 
   const ownedSet = useMemo(() => new Set(owned), [owned]);
@@ -123,7 +142,8 @@ export function SetupPanel({
       name: names[i] ?? `Player ${i + 1}`,
       factions: [...new Set(s.factions.filter(Boolean))],
     }));
-    onStart({ type: "setup", players, bases: bases.filter((base): base is BaseSnapshot => base !== null), target, first });
+    const chosen = bases.filter((base): base is BaseSnapshot => base !== null);
+    onStart({ type: "setup", players, bases: chosen, target, first, ...(madness ? { madness: true } : {}) });
   };
 
   return (
@@ -151,16 +171,19 @@ export function SetupPanel({
                     key={k}
                     aria-label={`Player ${i + 1} faction ${k + 1}`}
                     value={s.factions[k]}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const picked = e.target.value;
                       setSeats((prev) =>
                         prev.map((other, j) => {
                           if (j !== i) return other;
                           const next: [string, string] = [...other.factions];
-                          next[k] = e.target.value;
+                          next[k] = picked;
                           return { ...other, factions: next };
                         }),
-                      )
-                    }
+                      );
+                      // A Cthulhu faction means the Madness deck is in play.
+                      if (FACTION_BY_ID.get(picked)?.set === MADNESS_SET) setMadness(true);
+                    }}
                     className="min-w-0 border border-edge bg-bg px-2 py-2 font-mono text-xs text-ink focus:border-accent focus:outline-none"
                   >
                     <option value="">Faction (optional)</option>
@@ -235,6 +258,21 @@ export function SetupPanel({
                 </option>
               ))}
             </select>
+          </label>
+          <label className="flex min-h-11 items-start gap-2 font-mono text-xs text-ink">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={madness}
+              onChange={(e) => setMadness(e.target.checked)}
+            />
+            <span>
+              Madness deck in play
+              <span className="block text-[0.65rem] leading-relaxed text-muted">
+                The Cthulhu set&apos;s factions use it. The tracker counts each player&apos;s Madness and takes 1 VP
+                for every two when the game ends.
+              </span>
+            </span>
           </label>
           <OwnedSets owned={owned} onChange={onOwnedChange} />
         </div>

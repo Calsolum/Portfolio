@@ -17,6 +17,11 @@ const ACTIONS: Action[] = [
   { type: "swap", base: slotKey(1), to: CUSTOM },
   { type: "endTurn" },
   { type: "undo", target: "entry-0001" },
+  { type: "setup", players: PLAYERS, bases: [TORTUGA], target: 12, first: 0, madness: true },
+  { type: "minion", base: slotKey(0), player: "p1", delta: 1, power: 3 },
+  { type: "minion", base: slotKey(0), player: "p2", delta: -1, power: 0 },
+  { type: "turn", player: "p2" },
+  { type: "madness", player: "p3", delta: 2 },
 ];
 
 /** As it arrives off the network: plain JSON. */
@@ -98,6 +103,29 @@ describe("parseEntry", () => {
     expect(place({ ...TORTUGA, bonus: "double-everything" })).toBeNull();
     expect(place({ ...TORTUGA, name: "" })).toBeNull();
     expect(place(CUSTOM)).toEqual({ type: "place", slot: 1, base: CUSTOM });
+  });
+
+  it("checks a minion's direction and power", () => {
+    const minion = (delta: unknown, power: unknown) =>
+      parseAction({ type: "minion", base: slotKey(0), player: "p1", delta, power });
+    for (const [delta, power] of [
+      [2, 3],
+      [0, 3],
+      [1, -1],
+      [1, 21],
+      [1, 1.5],
+      [-1, "3"],
+    ]) {
+      expect(minion(delta, power), `${delta}, ${power}`).toBeNull();
+    }
+    expect(minion(-1, 20)).not.toBeNull();
+    expect(parseAction({ type: "turn", player: "not a player id" })).toBeNull();
+    expect(parseAction({ type: "madness", player: "p1", delta: 0 })).toBeNull();
+  });
+
+  it("keeps the Madness flag only when it is true", () => {
+    const setup = { ...ACTIONS[0], madness: "yes" };
+    expect(parseAction(setup)).not.toHaveProperty("madness");
   });
 
   it("refuses the same player twice in one scoring", () => {

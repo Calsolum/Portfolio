@@ -63,15 +63,22 @@ function parseGame(value: unknown): SavedGame | null {
   };
 }
 
-function isHistoryEntry(value: unknown): value is HistoryEntry {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.endedAt === "number" &&
-    typeof value.winner === "string" &&
-    Array.isArray(value.players) &&
-    Array.isArray(value.bases)
-  );
+/** A saved history entry, filling in fields that older entries (with a single `winner`) don't have. */
+function parseHistoryEntry(value: unknown): HistoryEntry | null {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.endedAt !== "number") return null;
+  if (!Array.isArray(value.players) || !Array.isArray(value.bases)) return null;
+  const winners = Array.isArray(value.winners)
+    ? strings(value.winners)
+    : typeof value.winner === "string"
+      ? [value.winner]
+      : [];
+  if (!winners.length) return null;
+  return {
+    ...(value as unknown as HistoryEntry),
+    winners,
+    madness: value.madness === true,
+    first: typeof value.first === "number" ? value.first : 0,
+  };
 }
 
 export function parseState(text: string): SavedState {
@@ -89,7 +96,9 @@ export function parseState(text: string): SavedState {
       keepAwake: settings.keepAwake === true,
     },
     game: parseGame(raw.game),
-    history: Array.isArray(raw.history) ? raw.history.filter(isHistoryEntry) : [],
+    history: Array.isArray(raw.history)
+      ? raw.history.map(parseHistoryEntry).filter((entry): entry is HistoryEntry => entry !== null)
+      : [],
   };
 }
 

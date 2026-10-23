@@ -8,6 +8,16 @@ import { BASE_BY_ID, SET_BY_ID } from "../lib/catalog";
 import { breakpointOf, effectivePower, isReady, totalPower } from "../lib/scoring";
 import type { BaseInPlay, PlayerInfo } from "../types";
 import { PlayerDot, StepButton, vpText } from "./common";
+import { MinionPad } from "./MinionPad";
+
+/** A pawn, for the button that plays or loses a minion. */
+const PawnIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+    <circle cx="12" cy="6" r="3.2" />
+    <path d="M8.6 11h6.8l-1.3 6.2H9.9z" />
+    <rect x="6" y="18.2" width="12" height="3" rx="1" />
+  </svg>
+);
 
 /** What the −/+ buttons change. */
 export type Mode = "power" | "temp" | "minions";
@@ -22,6 +32,7 @@ export function BaseCard({
   activePlayer,
   mode,
   onCount,
+  onMinion,
   onScore,
   onBreakpoint,
   onSwap,
@@ -31,11 +42,14 @@ export function BaseCard({
   activePlayer: number;
   mode: Mode;
   onCount: (player: string, delta: number) => void;
+  onMinion: (player: string, delta: 1 | -1, power: number) => void;
   onScore: () => void;
   onBreakpoint: (delta: number) => void;
   onSwap: () => void;
 }) {
   const [menu, setMenu] = useState(false);
+  /** The player whose minion pad is open. */
+  const [pad, setPad] = useState<PlayerInfo | null>(null);
   const card = base.base.card ? BASE_BY_ID.get(base.base.card) : undefined;
   const total = totalPower(base);
   const breakpoint = breakpointOf(base);
@@ -118,10 +132,26 @@ export function BaseCard({
               <StepButton label={`${player.name}: one more ${MODE_WORDS[mode]} on ${name}`} onClick={() => onCount(player.id, 1)}>
                 +
               </StepButton>
+              <StepButton label={`${player.name}: a minion played or lost on ${name}`} onClick={() => setPad(player)}>
+                <PawnIcon />
+              </StepButton>
             </li>
           );
         })}
       </ul>
+
+      {pad ? (
+        <MinionPad
+          player={pad.name}
+          base={name}
+          canLose={(base.counts[pad.id]?.minions ?? 0) > 0}
+          onClose={() => setPad(null)}
+          onPick={(delta, power) => {
+            onMinion(pad.id, delta, power);
+            setPad(null);
+          }}
+        />
+      ) : null}
 
       <footer className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-edge px-4 py-2">
         {ready ? (

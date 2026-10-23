@@ -15,7 +15,7 @@ import { useRoomSync } from "../sync/useRoomSync";
 import type { Action, Entry } from "../types";
 import { Board } from "./Board";
 import { HistoryPanel } from "./HistoryPanel";
-import { SetupPanel } from "./SetupPanel";
+import { SetupPanel, type SetupPreset } from "./SetupPanel";
 import { JoinForm, ShareBar } from "./SharePanel";
 import { useWakeLock, useWakeLockSupported } from "./useWakeLock";
 
@@ -34,6 +34,8 @@ export function SmashUpApp() {
   const [tab, setTab] = useState<Tab | null>(null);
   /** Whether this site has sharing switched on; unknown until the server answers. */
   const [canShare, setCanShare] = useState<boolean | null>(null);
+  /** A rematch's players and settings for the New game form, and a count that remounts the form for each one. */
+  const [rematch, setRematch] = useState<{ preset: SetupPreset; n: number } | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const linked = parseRoomCode(useSearchParams().get("room"));
@@ -41,6 +43,20 @@ export function SmashUpApp() {
   useEffect(() => {
     void sharingAvailable().then(setCanShare);
   }, []);
+
+  useEffect(() => {
+    // Lets the page open with no signal once it has been opened online. Production only: the dev server changes
+    // its files on every edit.
+    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/smash-up-sw.js", { scope: "/smash-up", updateViaCache: "none" }).catch(() => {
+      // Without it the page still works; it just needs a connection to open.
+    });
+  }, []);
+
+  const startRematch = (preset: SetupPreset) => {
+    setRematch((prev) => ({ preset, n: (prev?.n ?? 0) + 1 }));
+    setTab("setup");
+  };
 
   const game = state.game;
   const room = game?.kind === "shared" ? game.room : null;
@@ -116,6 +132,7 @@ export function SmashUpApp() {
       game: { kind: "local", entries: [entry] },
       settings: { ...s.settings, names: setup.players.map((player) => player.name) },
     }));
+    setRematch(null);
     setTab("board");
   };
 
@@ -210,6 +227,14 @@ export function SmashUpApp() {
             owned={owned}
             dispatch={dispatch}
             onNewGame={() => setTab("setup")}
+            onRematch={() =>
+              startRematch({
+                players: board.players.map((player) => ({ name: player.name, factions: player.factions })),
+                target: board.target,
+                first: board.first,
+                madness: board.madness !== null,
+              })
+            }
             toolbar={
               <div className="flex flex-col gap-3">
                 {canShare || room ? (
@@ -256,6 +281,8 @@ export function SmashUpApp() {
 
       {current === "setup" ? (
         <SetupPanel
+          key={rematch?.n ?? 0}
+          preset={rematch?.preset}
           owned={state.settings.owned}
           lastNames={state.settings.names}
           inProgress={Boolean(board && board.result?.kind !== "won")}
@@ -266,7 +293,11 @@ export function SmashUpApp() {
       ) : null}
 
       {current === "history" ? (
-        <HistoryPanel history={state.history} onClear={() => update((s) => ({ ...s, history: [] }))} />
+        <HistoryPanel
+          history={state.history}
+          onClear={() => update((s) => ({ ...s, history: [] }))}
+          onRematch={startRematch}
+        />
       ) : null}
 
       <div className="flex flex-col gap-1 font-mono text-[0.65rem] leading-relaxed text-muted">

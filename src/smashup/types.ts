@@ -50,12 +50,26 @@ export interface Award {
 }
 
 export type Action =
-  | { type: "setup"; players: PlayerInfo[]; bases: BaseSnapshot[]; target: number; first: number }
+  | {
+      type: "setup";
+      players: PlayerInfo[];
+      bases: BaseSnapshot[];
+      target: number;
+      first: number;
+      /** Played with the Madness deck (the Cthulhu set), so Madness is counted. */
+      madness?: boolean;
+    }
   /** Power that stays: minions played, +1 power counters. */
   | { type: "power"; base: string; player: string; delta: number }
   /** Power until the end of the turn. */
   | { type: "temp"; base: string; player: string; delta: number }
   | { type: "minions"; base: string; player: string; delta: number }
+  /** A minion played (+1) or lost (−1) together with its power, as one change. */
+  | { type: "minion"; base: string; player: string; delta: 1 | -1; power: number }
+  /** The turn handed to a player out of seat order: extra turns (Portal Room) and corrections. */
+  | { type: "turn"; player: string }
+  /** Madness cards a player holds in hand, deck and discard. */
+  | { type: "madness"; player: string; delta: number }
   | { type: "breakpoint"; base: string; delta: number }
   | { type: "vp"; player: string; delta: number }
   /** The awards as confirmed, so a replay never depends on how scoring is worked out today. */
@@ -107,7 +121,14 @@ export interface ScoredBase {
 }
 
 export type GameResult =
-  | { kind: "won"; winner: string; at: number }
+  | {
+      kind: "won";
+      /** More than one only when Madness leaves players level on VP and on Madness. */
+      winners: string[];
+      at: number;
+      /** VP after Madness costs; the same as the scoreboard in a game without Madness. */
+      final: Record<string, number>;
+    }
   /** Someone has reached the target but the lead is shared, so play goes on. */
   | { kind: "tied"; leaders: string[] };
 
@@ -129,6 +150,10 @@ export interface GameState {
   startedAt: number;
   players: PlayerInfo[];
   target: number;
+  /** Who went first, by seat. */
+  first: number;
+  /** Madness cards per player; null in a game without the Madness deck. */
+  madness: Record<string, number> | null;
   /** One per base in play; null while a scored base waits for the next one. */
   slots: (BaseInPlay | null)[];
   vp: Record<string, number>;

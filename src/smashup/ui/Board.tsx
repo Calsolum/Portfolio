@@ -27,6 +27,7 @@ export function Board({
   owned,
   dispatch,
   onNewGame,
+  onRematch,
   toolbar,
 }: {
   board: GameState;
@@ -36,6 +37,8 @@ export function Board({
   owned: ReadonlySet<string>;
   dispatch: (action: Action) => void;
   onNewGame: () => void;
+  /** A new game with the same players, factions and seating. */
+  onRematch: () => void;
   toolbar?: ReactNode;
 }) {
   const [mode, setMode] = useState<Mode>("power");
@@ -65,6 +68,9 @@ export function Board({
     setPicking(null);
   }
   const leaderVp = Math.max(...board.players.map((player) => board.vp[player.id]));
+  const won = board.result?.kind === "won" ? board.result : null;
+  /** The VP shown in the accent colour: the leaders during play, the winners once the game is won (after Madness). */
+  const highlighted = (id: string) => (won ? won.winners.includes(id) : board.vp[id] === leaderVp && leaderVp > 0);
 
   const endTurn = () => {
     setConfirmEnd(false);
@@ -103,40 +109,50 @@ export function Board({
       </section>
 
       <section aria-label="Victory points" className="flex flex-wrap gap-2">
-        {board.players.map((player, index) => (
-          <button
-            key={player.id}
-            type="button"
-            onClick={() => setVpFor(player.id)}
-            aria-label={`${player.name}: ${board.vp[player.id]} VP. Change`}
-            className={`flex min-h-11 items-center gap-2 border px-3 py-1 font-mono text-sm transition-colors hover:border-accent ${
-              index === board.turn.player ? "border-ink" : "border-edge"
-            }`}
-          >
-            <PlayerDot index={index} />
-            <span className="text-ink">{player.name}</span>
-            <span
-              className={`tabular-nums ${board.vp[player.id] === leaderVp && leaderVp > 0 ? "text-accent" : "text-muted"}`}
+        {board.players.map((player, index) => {
+          const madness = board.madness?.[player.id];
+          return (
+            <button
+              key={player.id}
+              type="button"
+              onClick={() => setVpFor(player.id)}
+              aria-label={`${player.name}: ${board.vp[player.id]} VP${madness !== undefined ? `, ${madness} Madness` : ""}. Change`}
+              className={`flex min-h-11 items-center gap-2 border px-3 py-1 font-mono text-sm transition-colors hover:border-accent ${
+                index === board.turn.player ? "border-ink" : "border-edge"
+              }`}
             >
-              {board.vp[player.id]}
-            </span>
-          </button>
-        ))}
+              <PlayerDot index={index} />
+              <span className="text-ink">{player.name}</span>
+              <span className={`tabular-nums ${highlighted(player.id) ? "text-accent" : "text-muted"}`}>
+                {board.vp[player.id]}
+              </span>
+              {madness ? <span className="text-[0.65rem] text-accent2">{madness} Madness</span> : null}
+            </button>
+          );
+        })}
         <span className="self-center font-mono text-[0.65rem] text-muted">to {board.target} VP</span>
       </section>
 
-      {board.result?.kind === "won" ? (
+      {won ? (
         <section aria-live="polite" className="flex flex-col gap-3 border border-accent bg-card p-4">
           <p className="font-display text-3xl tracking-wide text-accent">
-            {nameOf(board.result.winner)} wins with {board.vp[board.result.winner]} VP
+            {won.winners.map(nameOf).join(" and ")} {won.winners.length > 1 ? "share the win" : "wins"} with{" "}
+            {won.final[won.winners[0]]} VP
           </p>
+          {board.madness ? (
+            <p className="font-mono text-xs leading-relaxed text-ink">
+              After Madness: {board.players.map((player) => `${player.name} ${won.final[player.id]}`).join(", ")}.
+              Every two Madness cards cost 1 VP, and level totals go to the player with fewer Madness.
+            </p>
+          ) : null}
           <p className="font-mono text-xs text-muted">
             Saved to this device&apos;s history. Undo takes it back if the last change was a mistake.
           </p>
-          <div>
-            <Button variant="primary" onClick={onNewGame}>
-              New game
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" onClick={onRematch} title="Same players, factions and seats; pick new bases">
+              Rematch
             </Button>
+            <Button onClick={onNewGame}>New game</Button>
           </div>
         </section>
       ) : board.result?.kind === "tied" ? (
@@ -178,6 +194,7 @@ export function Board({
               activePlayer={board.turn.player}
               mode={mode}
               onCount={(player, delta) => dispatch({ type: mode, base: base.key, player, delta })}
+              onMinion={(player, delta, power) => dispatch({ type: "minion", base: base.key, player, delta, power })}
               onScore={() => setScoring(base.key)}
               onBreakpoint={(delta) => dispatch({ type: "breakpoint", base: base.key, delta })}
               onSwap={() => setPicking({ kind: "swap", base: base.key })}
@@ -251,16 +268,48 @@ export function Board({
       ) : null}
 
       {vpFor ? (
-        <Dialog title={`${nameOf(vpFor)}'s VP`} onClose={() => setVpFor(null)}>
-          <div className="flex flex-col items-center gap-3">
-            <Stepper
-              label={`${nameOf(vpFor)}'s VP`}
-              value={board.vp[vpFor] ?? 0}
-              onChange={(value) => dispatch({ type: "vp", player: vpFor, delta: value - (board.vp[vpFor] ?? 0) })}
-            />
-            <p className="text-center font-mono text-[0.65rem] leading-relaxed text-muted">
-              For VP gained or lost outside scoring: base abilities, Madness and the like.
+        <Dialog title={nameOf(vpFor)} onClose={() => setVpFor(null)}>
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="font-mono text-xs text-muted">VP</span>
+              <Stepper
+                label={`${nameOf(vpFor)}'s VP`}
+                value={board.vp[vpFor] ?? 0}
+                onChange={(value) => dispatch({ type: "vp", player: vpFor, delta: value - (board.vp[vpFor] ?? 0) })}
+              />
+            </div>
+            <p className="font-mono text-[0.65rem] leading-relaxed text-muted">
+              For VP gained or lost outside scoring, such as from a base&apos;s ability.
             </p>
+            {board.madness ? (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="font-mono text-xs text-muted">Madness</span>
+                  <Stepper
+                    label={`${nameOf(vpFor)}'s Madness`}
+                    value={board.madness[vpFor] ?? 0}
+                    min={0}
+                    max={30}
+                    onChange={(value) =>
+                      dispatch({ type: "madness", player: vpFor, delta: value - (board.madness?.[vpFor] ?? 0) })
+                    }
+                  />
+                </div>
+                <p className="font-mono text-[0.65rem] leading-relaxed text-muted">
+                  Madness cards in hand, deck and discard. Every two cost 1 VP when the game ends.
+                </p>
+              </>
+            ) : null}
+            <Button
+              disabled={board.players[board.turn.player]?.id === vpFor}
+              onClick={() => {
+                dispatch({ type: "turn", player: vpFor });
+                setVpFor(null);
+              }}
+              title="For extra turns, such as from Portal Room, or to put the turn right"
+            >
+              {board.players[board.turn.player]?.id === vpFor ? "It's their turn" : `Make it ${nameOf(vpFor)}'s turn`}
+            </Button>
           </div>
         </Dialog>
       ) : null}
