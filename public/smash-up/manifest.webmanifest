@@ -1,0 +1,15 @@
+{
+  "name": "Smash Up Base Tracker",
+  "short_name": "Smash Up",
+  "description": "Power on every base in a game of Smash Up, scored by the rulebook, on one phone or every phone at the table.",
+  "start_url": "/smash-up",
+  "scope": "/smash-up",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/smash-up/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/smash-up/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/smash-up/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

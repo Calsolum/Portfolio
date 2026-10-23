@@ -2,11 +2,12 @@
 
 Personal portfolio site for Tariq Singh: interactive fiction, novels, poetry, stage and
 screen scripts, and self-built technical projects. Most works are readable in full on the
-site, two of the projects are playable in the browser, the FGO Team Builder runs at `/fgo`, and the Daily
-Deals finder runs at `/deals`.
+site, two of the projects are playable in the browser, the FGO Team Builder runs at `/fgo`, the Daily
+Deals finder runs at `/deals`, and the Smash Up Base Tracker runs at `/smash-up`.
 
 Built with Next.js (App Router), TypeScript and Tailwind CSS v4. Every page is statically
-prerendered; the only server code is the web-search API route behind `/deals`.
+prerendered; the only server code is the web-search API route behind `/deals` and the shared-game
+API behind `/smash-up`.
 
 ## Getting started
 
@@ -21,7 +22,7 @@ Other scripts:
 npm run build    # production build (also type-checks)
 npm run start    # serve the production build
 npm run lint     # eslint
-npm test         # vitest (FGO Team Builder engine, Daily Deals)
+npm test         # vitest (FGO Team Builder engine, Daily Deals, Smash Up Base Tracker)
 ```
 
 ## Editing the site
@@ -94,17 +95,20 @@ src/data/site.ts    all copy, metadata and links
 src/fgo/            FGO Team Builder: atlas/ (API client + cache), engine/ (battle sim + search), state/, ui/
 src/deals/          Daily Deals: lib/ (geo, OpenStreetMap, matching, validation), data/ (checked deals),
                     server/ (web search, cache, limits), ui/
-src/app/api/        the one API route: deals/web, the web search behind /deals
-src/lib/content.ts  content loaders
+src/smashup/        Smash Up Base Tracker: data/ (sets, bases, factions), lib/ (scoring, game replay,
+                    checks), state/, sync/ (shared games), server/ (rooms API), ui/
+src/app/api/        API routes: deals/web (the web search behind /deals) and smash-up/rooms (shared games)
+src/lib/            content loaders, and the rate limiter both API routes use
 public/apps/        self-contained playable builds (DrunkQuest, Tragedy Looper)
 public/downloads/   script PDFs and the resume
 ```
 
 ## Deploy
 
-Hosted on Vercel, which detects Next.js and needs no build configuration. The one environment
-variable is the optional `ANTHROPIC_API_KEY` that switches on web search on `/deals` (see below);
-without it `next build` is the whole story. Pushes to the production branch
+Hosted on Vercel, which detects Next.js and needs no build configuration. Two things are optional
+and switched on by environment variables: `ANTHROPIC_API_KEY` for web search on `/deals`, and an
+Upstash Redis database for shared games on `/smash-up` (both below). Without them `next build` is
+the whole story. Pushes to the production branch
 (`portfolio`, also the repo default) deploy automatically; other branches get preview
 deployments.
 
@@ -168,6 +172,59 @@ OpenStreetMap IDs) and checks the pinned venues against a real OpenStreetMap res
 either the typed place or that rounded position. This site's server sees only a 5 km grid-square ID,
 and only when someone presses the web search button. The visitor's exact position stays in the
 browser.
+
+## Smash Up Base Tracker (`/smash-up`)
+
+A table-side tracker for Smash Up: power, power until the end of the turn and minions on every base
+(a minion and its power can be entered in one tap from a power pad), scoring by the rulebook (ties,
+who is eligible, and seven bases whose extra VP it can work out), VP to the target, the turn handed
+to any player for extra turns, Madness with its end-of-game VP cost, factions per player, a history
+of finished games with stats and rematches. A game is stored as a list of actions and the board is
+replayed from it, which is what makes undo exact and sharing safe. The logic is in
+`src/smashup/lib/` and is covered by `npm test`.
+
+**Opening with no signal.** `public/smash-up-sw.js` is a service worker scoped to `/smash-up`,
+registered only in production builds. It fetches the page from the network first and falls back to
+its stored copy, with the build files that copy needs, so the page opens offline once it has been
+opened online; sharing still needs a connection. To retire it, replace the file with one that calls
+`self.registration.unregister()` and deletes its caches, since a deleted file leaves installed
+copies running.
+
+**Switching on shared games.** One phone works with nothing set up. To let every phone at the table
+join a game by code or QR, the site needs a small Redis database:
+
+1. In the Vercel dashboard, open the project's **Storage** tab, create an **Upstash for Redis**
+   database on the free plan and connect it to this project (Production, and Preview if wanted).
+   It adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`; the code also accepts Upstash's own names,
+   `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+2. Redeploy, since environment variables only reach new deployments.
+
+Until then the page asks `/api/smash-up/rooms?status=1`, gets `{"sync":false}` and leaves the Share
+and Join controls out. The answer is cached for about a minute.
+
+**What sharing uses.** Phones poll every 1.5 s just after a change and every 4 s when the table is
+quiet, and not at all while hidden; each poll and each tap is one Redis command. A four-player
+evening is roughly 8,000 to 15,000 commands, well inside the free tier's monthly allowance. If the
+allowance runs out, sharing stops until it resets and single-phone games carry on. A room is
+deleted 48 hours after its last change and holds at most 5,000 changes, and the API limits how fast
+one address can create rooms and send changes (per server instance).
+
+**Trying sharing locally.** `npm run dev` keeps rooms in memory, so two tabs can share a game
+without a database. For `npm run start`, put `SMASHUP_ROOMS=memory` in `.env.local`. Rooms in memory
+vanish when the server restarts.
+
+**Updating the base list.** `src/smashup/data/` holds every set, base and faction, read from the
+Smash Up Wiki's [Bases](https://smashup.fandom.com/wiki/Bases) and
+[Factions](https://smashup.fandom.com/wiki/Category:Factions) pages (names and numbers only; card
+text is AEG's). The page source is easiest to read through the wiki's API,
+`https://smashup.fandom.com/api.php?action=parse&page=Bases&prop=wikitext&format=json`, where
+struck-through lines are old wordings. For a new set, add it to `sets.ts`, its bases and factions to
+`bases.ts` and `factions.ts`, and its counts to the table in `src/smashup/__tests__/data.test.ts`;
+`npm test` then checks ids, sets, numbers and counts.
+
+**Who sees what.** Games, settings and history stay in the browser's local storage. A shared game
+is stored on the server under its code until it expires, and holds only what the players typed
+(names, factions, bases and taps).
 
 ## Notes
 

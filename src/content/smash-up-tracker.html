@@ -1,0 +1,34 @@
+<p><em>Web App · Card Game Companion</em></p>
+
+<p>Smash Up is a card game fought over bases. Players pile minions onto them, and when the power on a base reaches its breakpoint the base scores, paying out to the players with the most power there. With four players and five bases in play, keeping those running totals straight is most of the arithmetic in the game.</p>
+
+<hr />
+
+<p>The tracker holds the arithmetic. You set the game up once: the players, their two factions, and the starting bases. As cards are played you tap in power, power that only lasts until the end of the turn, and minions, base by base; a power pad enters a minion and its power in one tap. A base lights up when it reaches its breakpoint, and scoring it shows who placed where and what each player earns, ready to confirm.</p>
+
+<p>Around that sit the rest of a game night: the turn can be handed to any player for extra turns, Madness is counted and charged at the end, finished games build up stats per player and faction, a rematch keeps the same seats, and once opened the page works with no signal.</p>
+
+<h2>Scoring by the rulebook</h2>
+
+<ul>
+<li>A player needs a minion or at least 1 power on a base to score there.</li>
+<li>Tied players share the best place they tied for, and the places they fill are used up: 10, 10 and 5 power pays first, first and third.</li>
+<li>Seven bases pay extra points the tracker can work out from what it counts, such as Rhodes Plaza Mall's point per minion, and the scoring sheet fills those in. Anything else a base does is a number to adjust before confirming.</li>
+<li>The game ends at the end of a turn once someone has 15 VP. A shared lead plays on.</li>
+</ul>
+
+<h2>Every base, every phone</h2>
+
+<p>All 214 bases and 106 factions are built in, from the Core Set to the latest boosters. Their breakpoints and points come from the Smash Up Wiki, and tests check every set against the counts the wiki gives. Players tick the sets they own, and picking a base is a quick search.</p>
+
+<p>A game is stored as a list of actions rather than a board, and the board is replayed from that list. This makes undo exact, scoring included, and it is what lets a game be shared. Every phone that joins by QR code sends its taps, the server keeps them in one order, and each phone replays the same list. Taps made on a weak connection wait and go out when it comes back.</p>
+
+<h2>How it was built</h2>
+
+<p>Tariq's brief was one line: build a Smash Up base tracker. In planning he made it a page on this site, chose every base from every set over typing numbers in at the table, and took all four extras on offer: minion counts, power that ends with the turn, factions per player and a history of games. Asked whether it should run on one shared phone or on everyone's phone in step, he answered "Can I do both", so it does both.</p>
+
+<p>Before it went live he put the finished tracker through a review that questioned each assumption. It showed that entering a minion took five taps and that an extra turn could not be recorded, so he chose a power pad and handing over the turn, and added Madness, stats, rematches and use without a signal.</p>
+
+<p>The base list was read from the Smash Up Wiki through its API, and tests check every set against the wiki's counts. The tracker was tested in a browser through full games, at phone width and offline, with two browser tabs standing in for two phones, and 110 tests cover its code.</p>
+
+<p><strong>Tech stack:</strong> Next.js · TypeScript · Upstash Redis · Vitest</p>
