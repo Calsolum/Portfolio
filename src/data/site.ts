@@ -354,8 +354,9 @@ export const experience: ExperienceEntry[] = [
     org: "Bhacepatti Singh & Co., Trinidad and Tobago (remote)",
     period: "Sep 2018 – Present",
     bullets: [
-      "Open, organise and maintain client and case files so documents can be found when they are needed.",
-      "Prepare, copy and file legal correspondence and court documents accurately and on deadline.",
+      "Organise and maintain client and case files for a Trinidad and Tobago law firm, working remotely since 2018.",
+      "Proofread and format legal correspondence and documents so they're accurate before filing.",
+      "Track filing deadlines and keep records current so lawyers can find what they need quickly.",
     ],
   },
   {
