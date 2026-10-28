@@ -5,7 +5,7 @@ It is handed three small functions when it's registered:
 
 - submit(image, copies) -> job id: queue a print on the existing job loop
 - status(job id) -> dict: report that job, normalised by `normalize_status`
-- label_size() -> (width, height): the preset that's loaded now
+- label_size() -> (width, height): the printable area of the preset loaded now
 
 The app only relies on the JSON shapes defined here, so the label server's own
 routes can change without breaking it.
@@ -77,6 +77,7 @@ def create_blueprint(
     margin: int = 20,
     x_shift: int = 0,
     scryfall: Scryfall | None = None,
+    token_size: tuple[int, int] = (WIDTH, HEIGHT),
 ) -> Blueprint:
     bp = Blueprint("tokens", __name__)
     sf = scryfall or Scryfall(cache_dir)
@@ -92,7 +93,7 @@ def create_blueprint(
 
     def render(data: dict) -> Image.Image:
         size = tuple(label_size())
-        if size != (WIDTH, HEIGHT):
+        if size != tuple(token_size):
             raise BadRequest("Load the 50×80 mm labels and pick that size on the Kitchen Hub first.")
         token, art = resolve(data)
         return render_token(token, art, size=size, margin=margin, x_shift=x_shift)
@@ -109,7 +110,7 @@ def create_blueprint(
     def health():
         width, height = label_size()
         return jsonify(ok=True, api=API_VERSION, label={"width": width, "height": height},
-                       ready=(width, height) == (WIDTH, HEIGHT))
+                       ready=(width, height) == tuple(token_size))
 
     @bp.get("/tokens/search")
     def search():

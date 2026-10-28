@@ -29,12 +29,16 @@ def current_label_size():
     raise NotImplementedError
 
 
-# The label server already applies its own margin and print-head offset when
-# it draws labels; pass the same values so tokens line up with everything else.
+# Draw tokens at the preset's printable area with its own margin and shift, so
+# they line up like every other label. On the Kitchen Hub (calibrated
+# 2026-10-27) the 50x80 preset is 577x927 printable, margin 20, no shift, and
+# submit_token places the token on the full print bitmap the same way the
+# server's other labels are placed.
 app.register_blueprint(create_blueprint(  # noqa: F821  (app lives in label_server.py)
     submit=submit_token,
     status=token_job_status,
     label_size=current_label_size,
+    token_size=(577, 927),
     margin=20,
     x_shift=0,
 ))

@@ -1,8 +1,9 @@
 """Draws a token as a black-and-white label image.
 
-The B1 prints 1-bit, so everything here ends up pure black or white: text and
+The printer is 1-bit, so everything here ends up pure black or white: text and
 boxes are drawn solid, and the art is dithered. The default size is the
-50x80 mm preset (640 px across the print head, 1024 px along the feed).
+first guess at the 50x80 mm preset; the label server passes the calibrated
+printable area instead.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 # MTG Token Printer
 
-Print Magic: The Gathering tokens on a NIIMBOT B1 label printer from an Android phone.
+Print Magic: The Gathering tokens on a Bluetooth label printer from an Android phone.
 Each token prints on one 50×80 mm label: name, dithered art, type line, rules text, a
 big power/toughness box and the artist credit. You can also type in your own token.
 
@@ -15,7 +15,8 @@ pi/        Flask blueprint that plugs into the Kitchen Hub label server on the R
 
 1. The app sends the label server a Scryfall token id (or a custom token) and a copy count.
 2. The Pi looks the token up on [Scryfall](https://scryfall.com/docs/api), caches it, and
-   draws the label at 640×1024 px in pure black and white.
+   draws the label in pure black and white at the preset's printable size (577×927 px for
+   the 50×80 mm roll, calibrated from a test print).
 3. The label server's existing job queue prints it over Bluetooth. The app polls the job
    and shows "Printed." or "Print failed: <reason>". Failed jobs aren't retried.
 

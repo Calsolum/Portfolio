@@ -278,7 +278,7 @@ private fun DetailScreen(prefs: Prefs, token: Token) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            Modifier.fillMaxWidth(0.75f).aspectRatio(640f / 1024f).border(1.dp, MaterialTheme.colorScheme.outline),
+            Modifier.fillMaxWidth(0.75f).aspectRatio(577f / 927f).border(1.dp, MaterialTheme.colorScheme.outline),
             contentAlignment = Alignment.Center,
         ) {
             val bitmap = preview

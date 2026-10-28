@@ -185,6 +185,20 @@ def test_wrong_label_size_is_refused(tmp_path):
     assert app.test_client().get("/tokens/health").json["ready"] is False
 
 
+def test_token_size_follows_the_calibrated_preset(tmp_path):
+    jobs = {}
+    app = Flask(__name__)
+    app.register_blueprint(create_blueprint(
+        submit=lambda image, copies: jobs.setdefault("j", image) and "j", status=lambda j: None,
+        label_size=lambda: (577, 927), token_size=(577, 927),
+        cache_dir=tmp_path, scryfall=FakeScryfall()))
+    client = app.test_client()
+    assert client.get("/tokens/health").json["ready"] is True
+    assert client.post("/print/token", json={"id": GOBLIN_ID}).status_code == 202
+    assert jobs["j"].size == (577, 927)
+    assert is_one_bit(jobs["j"])
+
+
 def test_queue_failure_says_it_failed(tmp_path):
     def broken(image, copies):
         raise RuntimeError("printer not connected")
