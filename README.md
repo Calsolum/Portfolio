@@ -3,11 +3,12 @@
 Personal portfolio site for Tariq Singh: interactive fiction, novels, poetry, stage and
 screen scripts, and self-built technical projects. Most works are readable in full on the
 site, two of the projects are playable in the browser, the FGO Team Builder runs at `/fgo`, the Daily
-Deals finder runs at `/deals`, and the Smash Up Base Tracker runs at `/smash-up`.
+Deals finder runs at `/deals`, and the Smash Up Base Tracker runs at `/smash-up`, with a big-screen
+view of a game at `/tv`.
 
 Built with Next.js (App Router), TypeScript and Tailwind CSS v4. Every page is statically
 prerendered; the only server code is the web-search API route behind `/deals` and the shared-game
-API behind `/smash-up`.
+API behind `/smash-up` and the TV display at `/tv`.
 
 ## Getting started
 
@@ -97,7 +98,8 @@ src/deals/          Daily Deals: lib/ (geo, OpenStreetMap, matching, validation)
                     server/ (web search, cache, limits), ui/
 src/smashup/        Smash Up Base Tracker: data/ (sets, bases, factions), lib/ (scoring, game replay,
                     checks), state/, sync/ (shared games), server/ (rooms API), ui/
-src/app/api/        API routes: deals/web (the web search behind /deals) and smash-up/rooms (shared games)
+src/tv/             TV display: page.ts (the plain /tv page), server/ (screen codes API), smashup/ (board drawn as HTML)
+src/app/api/        API routes: deals/web (the web search behind /deals), smash-up/rooms (shared games) and tv/screens (TV display)
 src/lib/            content loaders, and the rate limiter both API routes use
 public/apps/        self-contained playable builds (DrunkQuest, Tragedy Looper)
 public/downloads/   script PDFs and the resume
@@ -226,6 +228,32 @@ struck-through lines are old wordings. For a new set, add it to `sets.ts`, its b
 **Who sees what.** Games, settings and history stay in the browser's local storage. A shared game
 is stored on the server under its code until it expires, and holds only what the players typed
 (names, factions, bases and taps).
+
+## TV display (`/tv`)
+
+A Smash Up game on a TV across the room, built for an Ouya plugged into the TV. The TV opens `/tv`
+and shows a five-character code. On the tablet running the game, **Show on TV** (on the board, next
+to Share) shares the game if it isn't yet and asks for that code. From then on the tablet plays as
+usual and the TV follows; nobody else has to join. The TV keeps its code in local storage, so a
+bookmark of `/tv` comes back to the same code.
+
+**Old browsers.** `/tv` is a plain HTML page from `src/app/tv/route.ts`, not a React page, because
+Next.js's own scripts need a 2023-or-later browser and an Ouya's browsers are older and slow. Its
+script is ES5 (`var`, `XMLHttpRequest`), its layout avoids flexbox and grid, and the board is drawn
+as HTML on the server (`src/tv/smashup/render.ts`) and swapped in whole. A test checks the script
+stays ES5. Firefox is the browser to use on the Ouya: the stock browser is too old to trust
+most current HTTPS certificates.
+
+**API.** `POST /api/tv/screens` makes a screen code (kept in the same Redis as the rooms, forgotten a
+day after the TV last asked). `GET /api/tv/screens/CODE?room=R&total=N` is the TV's poll: `waiting`
+until a game is linked, then `live` with the board's HTML, or `same` when nothing has changed since
+entry N. `POST /api/tv/screens/CODE` with `{"game":"smash-up","room":"R"}` links a game, or
+`{"room":null}` clears it.
+
+**What it uses.** The TV polls every 2 s while the game is moving and every 5 s after two quiet
+minutes, at two Redis commands a poll, so a four-hour game night is roughly 10,000 to 15,000
+commands. After three hours with no change it stops and shows a paused screen until a button is
+pressed. `npm run dev` keeps screens in memory, like rooms.
 
 ## Notes
 
