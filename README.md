@@ -103,6 +103,7 @@ src/app/api/        API routes: deals/web (the web search behind /deals), smash-
 src/lib/            content loaders, and the rate limiter both API routes use
 public/apps/        self-contained playable builds (DrunkQuest, Tragedy Looper)
 public/downloads/   script PDFs and the resume
+mtg-token-printer/  phone app + Pi routes for printing MTG tokens on a label printer (not part of the site)
 ```
 
 ## Deploy
