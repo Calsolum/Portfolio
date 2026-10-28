@@ -218,7 +218,7 @@ export const projects: Project[] = [
     category: "projects",
     kind: "Self-hosted · Raspberry Pi 5",
     blurb:
-      "A fully self-hosted smart kitchen management system built on a Raspberry Pi 5 — no subscriptions, no cloud dependency. Custom touchscreen dashboard, on-device voice control, live grocery deal matching, and smart home automation. Fridge-mounted, running entirely on a private home network.",
+      "A fully self-hosted smart kitchen management system built on a Raspberry Pi 5 — no subscriptions, no cloud dependency. Custom touchscreen dashboard with a kitchen timer and stopwatch, on-device voice control, live grocery deal matching, and smart home automation. Fridge-mounted, running entirely on a private home network.",
     stack: "Docker · Flask · Grocy · Mealie · faster-whisper · Home Assistant · Tailscale",
     tags: ["Docker", "Flask", "Home Assistant", "Raspberry Pi"],
     // Runs on a private home network, so the source is the only thing to link to.
@@ -311,7 +311,7 @@ export const projects: Project[] = [
     category: "projects",
     kind: "Web App · Local Food Deals",
     blurb:
-      "Finds weekday food specials near you: wing nights, taco Tuesdays, lunch combos. Type a place or use your location and it lists a hand-checked set of deals from the restaurants' own sites, nearest first. A button hands the rest to Claude, which searches the web and reads pages, and the site keeps only the deals it can link to a page the search actually returned.",
+      "Finds weekday food specials near you: wing nights, taco Tuesdays, lunch combos. Type a place or use your location and it lists a hand-checked set of deals from the restaurants' own sites, nearest first, each linked to the page it came from. A Claude-powered web search for everything else is built and tested but switched off for now, so the checked list is what runs.",
     stack: "Next.js · TypeScript · OpenStreetMap · Claude API",
     tags: ["TypeScript", "Claude API", "OpenStreetMap"],
     app: "/deals",
@@ -362,7 +362,17 @@ export interface ExperienceEntry {
 
 export const experience: ExperienceEntry[] = [
   {
-    role: "Editor",
+    role: "Legal File Clerk",
+    org: "Bhacepatti Singh & Co., Trinidad and Tobago (remote)",
+    period: "Sep 2018 – Present",
+    bullets: [
+      "Organise and maintain client and case files for a Trinidad and Tobago law firm, working remotely since 2018.",
+      "Proofread and format legal correspondence and documents so they're accurate before filing.",
+      "Track filing deadlines and keep records current so lawyers can find what they need quickly.",
+    ],
+  },
+  {
+    role: "Senior Content Editor",
     org: "Mobile Gaming News Network",
     period: "Jul 2019 – Aug 2020",
     bullets: [

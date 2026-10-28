@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The label server is plain HTTP on the home network, and its address is
+     typed in on the phone, so cleartext can't be limited to one host here. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
