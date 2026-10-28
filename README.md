@@ -98,6 +98,7 @@ src/app/api/        the one API route: deals/web, the web search behind /deals
 src/lib/content.ts  content loaders
 public/apps/        self-contained playable builds (DrunkQuest, Tragedy Looper)
 public/downloads/   script PDFs and the resume
+mtg-token-printer/  phone app + Pi routes for printing MTG tokens on a label printer (not part of the site)
 ```
 
 ## Deploy
