@@ -53,6 +53,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -65,6 +66,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -284,6 +286,13 @@ private fun DetailScreen(deps: Deps, token: Token) {
     var progress by remember { mutableFloatStateOf(0f) }
     var failed by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
+
+    // Keep the screen on while printing so Android doesn't slow the app mid-label.
+    val view = LocalView.current
+    DisposableEffect(busy) {
+        view.keepScreenOn = busy
+        onDispose { view.keepScreenOn = false }
+    }
 
     LaunchedEffect(token) {
         val art = deps.scryfall.art(token.artUrl)

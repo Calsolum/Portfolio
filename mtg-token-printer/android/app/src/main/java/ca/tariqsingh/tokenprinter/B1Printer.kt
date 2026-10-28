@@ -14,6 +14,7 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -117,10 +118,16 @@ class B1Printer(private val context: Context, private val prefs: Prefs) {
             command(Niimbot.setDimension(height, width, copies))
             command(Niimbot.setQuantity(copies))
 
+            // Keep one row every 40 ms, like the Pi. The wait counts from when the row
+            // started sending, so a slow write doesn't add to it; falling behind lets
+            // the printer run dry mid-label and leaves a line where it paused.
             val pause = Niimbot.rowDelayMs(width)
+            var next = SystemClock.elapsedRealtime()
             for (y in 0 until height) {
                 write(Niimbot.imageRow(y, black, width).toBytes())
-                delay(pause)
+                next += pause
+                val wait = next - SystemClock.elapsedRealtime()
+                if (wait > 0) delay(wait) else next = SystemClock.elapsedRealtime()
                 if (y % 20 == 0) progress("Printing…", y.toFloat() / height)
             }
         } catch (e: ApiException) {
@@ -212,6 +219,9 @@ class B1Printer(private val context: Context, private val prefs: Prefs) {
             gatt = null
             return false
         }
+        // The default link sends a packet every 30-50 ms, too slow for one row
+        // every 40 ms; ask for the fast (7.5-15 ms) interval while connected.
+        g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
         g.discoverServices()
         if (withTimeoutOrNull(10_000) { servicesFound.await() } != true) return fail(g)
 
