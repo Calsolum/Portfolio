@@ -7,6 +7,7 @@ import { Button, Notice } from "@/components/ui/controls";
 import { parseRoomCode } from "../lib/ids";
 import type { SyncStatus } from "../sync/client";
 import { ConfirmButton, Dialog } from "./common";
+import { TvDialog } from "./TvPanel";
 
 const STATUS: Record<SyncStatus, { label: string; tone: string }> = {
   live: { label: "Live", tone: "text-accent" },
@@ -98,6 +99,8 @@ export function ShareBar({
   onLeave: () => void;
 }) {
   const [inviting, setInviting] = useState(false);
+  /** The TV dialog; asked for before the game is shared, it opens once the room exists. */
+  const [onTv, setOnTv] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,19 +111,34 @@ export function ShareBar({
           <p className="font-mono text-xs leading-relaxed text-muted">
             Put this game on everyone&apos;s phone: all of them can tap, and the board stays the same on each.
           </p>
-          <Button
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              const failure = await onShare();
-              setError(failure);
-              setBusy(false);
-              // The invitation opens as soon as the room exists.
-              if (!failure) setInviting(true);
-            }}
-          >
-            {busy ? "Sharing…" : "Share this game"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const failure = await onShare();
+                setError(failure);
+                setBusy(false);
+                // The invitation opens as soon as the room exists.
+                if (!failure) setInviting(true);
+              }}
+            >
+              {busy ? "Sharing…" : "Share this game"}
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={async () => {
+                // A TV follows a shared game, so the game is shared first.
+                setBusy(true);
+                const failure = await onShare();
+                setError(failure);
+                setBusy(false);
+                if (!failure) setOnTv(true);
+              }}
+            >
+              Show on TV
+            </Button>
+          </div>
         </div>
         {error ? <Notice tone="error">{error}</Notice> : null}
       </section>
@@ -139,7 +157,12 @@ export function ShareBar({
           </span>
         </p>
         <div className="flex flex-wrap gap-2">
-          {status !== "gone" && status !== "full" ? <Button onClick={() => setInviting(true)}>Invite</Button> : null}
+          {status !== "gone" && status !== "full" ? (
+            <>
+              <Button onClick={() => setInviting(true)}>Invite</Button>
+              <Button onClick={() => setOnTv(true)}>Show on TV</Button>
+            </>
+          ) : null}
           <ConfirmButton confirmText="Tap again to leave" onConfirm={onLeave}>
             {status === "gone" || status === "full" ? "Carry on here" : "Leave"}
           </ConfirmButton>
@@ -154,6 +177,7 @@ export function ShareBar({
         <Notice tone="error">This shared game can take no more changes. Carry on here on this phone.</Notice>
       ) : null}
       {inviting && room ? <Invite code={room} onClose={() => setInviting(false)} /> : null}
+      {onTv && room ? <TvDialog room={room} onClose={() => setOnTv(false)} /> : null}
     </section>
   );
 }
