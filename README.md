@@ -60,31 +60,22 @@ every time:
    the number is never written into this public repo:
 
    ```bash
-   python scripts/redact-resume.py <fresh-export.pdf> redacted.pdf <phone-number>
+   python scripts/redact-resume.py <fresh-export.pdf> public/downloads/tariq-singh-resume.pdf <phone-number>
    ```
 
-4. **Swap the email to the site's address** (`tariq@live.ca` → `tariq@tariqsingh.ca`, to
-   match `profile.email` in `site.ts`):
+   Make sure the export already shows `tariq@tariqsingh.ca`, matching `profile.email` in
+   `site.ts`.
 
-   ```bash
-   python scripts/update-resume-email.py redacted.pdf public/downloads/tariq-singh-resume.pdf
-   ```
-
-   Skip this step if the export already shows `tariq@tariqsingh.ca`. The script stops with
-   "could not find 'live'" when there's nothing to swap; in that case copy `redacted.pdf` to
-   `public/downloads/tariq-singh-resume.pdf` instead.
-5. **Check the result before committing.** Open the PDF and search it (Ctrl+F) for the phone
+4. **Check the result before committing.** Open the PDF and search it (Ctrl+F) for the phone
    number and postal code; neither should be found. The header should read
-   `tariq@tariqsingh.ca | Brampton, Canada`. Then delete `redacted.pdf`.
-6. **Ship it** through a PR like any other change, and open
+   `tariq@tariqsingh.ca | Brampton, Canada`.
+5. **Ship it** through a PR like any other change, and open
    <https://tariqsingh.ca/downloads/tariq-singh-resume.pdf> once it has deployed.
 
-**If a script fails**, the resume's header layout has probably changed. Both scripts match
-exact text runs in the PDF's header line: `redact-resume.py` looks for the first and last
-digit groups of the phone number you pass in, plus `POSTAL_PREFIX`, and
-`update-resume-email.py` looks for `OLD_LOCAL`.
-Update those to match the new export, then rerun from step 3. On macOS or Linux, use
-`python3` in place of `python`.
+**If the script fails**, the resume's header layout has probably changed. It matches exact
+text runs in the PDF's header line: the first and last digit groups of the phone number you
+pass in, plus `POSTAL_PREFIX`. Update those to match the new export, then rerun step 3.
+On macOS or Linux, use `python3` in place of `python`.
 
 ## Structure
 

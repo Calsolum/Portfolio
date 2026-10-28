@@ -6,7 +6,7 @@ mobile number and full postal code on it would be public. Drawing boxes over
 them would leave both strings extractable, so this removes the text-showing
 operators themselves from the page content stream.
 
-After this runs the header reads:  tariq@live.ca | Brampton, Canada
+After this runs the header shows only the email address and city.
 
 Usage:
     python3 scripts/redact-resume.py <source.pdf> <output.pdf> <phone>
