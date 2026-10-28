@@ -350,7 +350,17 @@ export interface ExperienceEntry {
 
 export const experience: ExperienceEntry[] = [
   {
-    role: "Editor",
+    role: "Legal File Clerk",
+    org: "Bhacepatti Singh & Co., Trinidad and Tobago (remote)",
+    period: "Sep 2018 – Present",
+    bullets: [
+      "Organise and maintain client and case files for a Trinidad and Tobago law firm, working remotely since 2018.",
+      "Proofread and format legal correspondence and documents so they're accurate before filing.",
+      "Track filing deadlines and keep records current so lawyers can find what they need quickly.",
+    ],
+  },
+  {
+    role: "Senior Content Editor",
     org: "Mobile Gaming News Network",
     period: "Jul 2019 – Aug 2020",
     bullets: [
