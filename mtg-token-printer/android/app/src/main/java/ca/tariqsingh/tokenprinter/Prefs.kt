@@ -3,13 +3,14 @@ package ca.tariqsingh.tokenprinter
 import android.content.Context
 import org.json.JSONArray
 
-/** The Pi's address and the last few tokens printed, kept on the phone. */
+/** The printer's Bluetooth address and the last few tokens printed, kept on the phone. */
 class Prefs(context: Context) {
     private val prefs = context.getSharedPreferences("token_printer", Context.MODE_PRIVATE)
 
-    var serverUrl: String
-        get() = prefs.getString("server_url", "") ?: ""
-        set(value) = prefs.edit().putString("server_url", value.trim()).apply()
+    /** Remembered after the first scan, so later prints connect without searching. */
+    var printerAddress: String?
+        get() = prefs.getString("printer_address", null)
+        set(value) = prefs.edit().putString("printer_address", value).apply()
 
     fun recent(): List<Token> {
         val array = JSONArray(prefs.getString("recent", "[]"))

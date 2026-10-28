@@ -7,23 +7,28 @@ big power/toughness box and the artist credit. You can also type in your own tok
 This isn't part of the website. It lives here so the code sits with the rest of my projects.
 
 ```
-android/   Kotlin + Jetpack Compose app (search, preview, copies, print, custom tokens)
-pi/        Flask blueprint that plugs into the Kitchen Hub label server on the Raspberry Pi
+android/   Kotlin + Jetpack Compose app: search, preview, copies, custom tokens, and
+           printing straight to the printer over Bluetooth LE
+pi/        the first version, which printed through the Kitchen Hub label server
 ```
 
 ## How it works
 
-1. The app sends the label server a Scryfall token id (or a custom token) and a copy count.
-2. The Pi looks the token up on [Scryfall](https://scryfall.com/docs/api), caches it, and
-   draws the label in pure black and white at the preset's printable size (577×927 px for
-   the 50×80 mm roll, calibrated from a test print).
-3. The label server's existing job queue prints it over Bluetooth. The app polls the job
-   and shows "Printed." or "Print failed: <reason>". Failed jobs aren't retried.
+1. The app searches [Scryfall](https://scryfall.com/docs/api) for tokens and downloads the
+   art (cached on the phone).
+2. It draws the label at the printable size of the 50×80 mm roll (577×927 px, calibrated
+   from a test print) in pure black and white, then places it on the printer's 640-px-wide
+   bitmap.
+3. It connects to the printer over Bluetooth LE and sends the same print sequence the
+   Kitchen Hub uses (`Niimbot.kt`): density, label type, page setup, then one packet per
+   image row, paced at 40 ms so the printer's buffer keeps up. Copies are printed by the
+   printer from one send.
+4. When it's done it disconnects, because the printer only takes one connection at a time.
 
-Everything is free: Scryfall's API needs no key, the APK is built by GitHub Actions and
-installed directly (no Play Store), and the Pi was already running.
+Everything is free: Scryfall's API needs no key, and the APK is built by GitHub Actions and
+installed directly (no Play Store).
 
-## Pi routes
+## Pi routes (first version)
 
 | Route | Does |
 | --- | --- |
@@ -60,9 +65,11 @@ the **Token Printer (latest)** release, so the phone always downloads from the s
 
 1. On the phone, open the release and download `token-printer.apk`.
 2. Allow installs from the browser when Android asks, then install.
-3. Open Token Printer, enter the label server's address with its port, tap **Test**, then **Save**.
+3. Turn the printer on, open Token Printer, pick a token and tap **Print**. Allow Bluetooth
+   when Android asks. The first print finds the printer; later prints reuse it.
 
 `android/app/debug.keystore` signs the APK with a fixed key, so each new build installs
 over the last one. It's a debug key for this sideloaded app only.
 
 To build it yourself, open `android/` in Android Studio, or run `./gradlew assembleDebug`.
+`./gradlew testDebugUnitTest` checks the packet bytes against the Pi's working code.

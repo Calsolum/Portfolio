@@ -1,10 +1,15 @@
 package ca.tariqsingh.tokenprinter
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -24,7 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,6 +37,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +55,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,26 +65,39 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val prefs = Prefs(this)
+        val deps = Deps(prefs, Scryfall(cacheDir), B1Printer(applicationContext, prefs))
         setContent {
             MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
-                Surface(Modifier.fillMaxSize()) { App(prefs) }
+                Surface(Modifier.fillMaxSize()) { App(deps) }
             }
         }
     }
 }
+
+private class Deps(val prefs: Prefs, val scryfall: Scryfall, val printer: B1Printer)
+
+/** Bluetooth permissions this Android version needs before scanning and connecting. */
+private val bluetoothPermissions: Array<String> =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+    } else {
+        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
 
 private sealed interface Screen {
     data object Home : Screen
@@ -88,8 +107,8 @@ private sealed interface Screen {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun App(prefs: Prefs) {
-    var screen by remember { mutableStateOf<Screen>(if (prefs.serverUrl.isEmpty()) Screen.Settings else Screen.Home) }
+private fun App(deps: Deps) {
+    var screen by remember { mutableStateOf<Screen>(Screen.Home) }
     BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
 
     Scaffold(
@@ -99,7 +118,7 @@ private fun App(prefs: Prefs) {
                     Text(
                         when (val s = screen) {
                             Screen.Home -> "Token Printer"
-                            Screen.Settings -> "Settings"
+                            Screen.Settings -> "Printer"
                             is Screen.Detail -> s.token.name
                         },
                         maxLines = 1,
@@ -125,33 +144,33 @@ private fun App(prefs: Prefs) {
     ) { padding ->
         Box(Modifier.padding(padding)) {
             when (val s = screen) {
-                Screen.Home -> HomeScreen(prefs) { screen = Screen.Detail(it) }
-                Screen.Settings -> SettingsScreen(prefs) { screen = Screen.Home }
-                is Screen.Detail -> DetailScreen(prefs, s.token)
+                Screen.Home -> HomeScreen(deps) { screen = Screen.Detail(it) }
+                Screen.Settings -> PrinterScreen(deps.prefs)
+                is Screen.Detail -> DetailScreen(deps, s.token)
             }
         }
     }
 }
 
 @Composable
-private fun HomeScreen(prefs: Prefs, open: (Token) -> Unit) {
+private fun HomeScreen(deps: Deps, open: (Token) -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     Column {
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Search") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Make your own") })
         }
-        if (tab == 0) SearchTab(prefs, open) else CustomTab(open)
+        if (tab == 0) SearchTab(deps, open) else CustomTab(open)
     }
 }
 
 @Composable
-private fun SearchTab(prefs: Prefs, open: (Token) -> Unit) {
+private fun SearchTab(deps: Deps, open: (Token) -> Unit) {
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<Token>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    val recent = remember { prefs.recent() }
+    val recent = remember { deps.prefs.recent() }
 
     LaunchedEffect(query) {
         error = null
@@ -162,7 +181,7 @@ private fun SearchTab(prefs: Prefs, open: (Token) -> Unit) {
         delay(400) // wait for typing to pause; a new keystroke cancels this
         loading = true
         try {
-            results = Api(prefs.serverUrl).search(query.trim())
+            results = deps.scryfall.search(query.trim())
             if (results.isEmpty()) error = "No tokens match \"${query.trim()}\"."
         } catch (e: ApiException) {
             error = e.message
@@ -256,20 +275,52 @@ private fun CustomTab(open: (Token) -> Unit) {
 }
 
 @Composable
-private fun DetailScreen(prefs: Prefs, token: Token) {
+private fun DetailScreen(deps: Deps, token: Token) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var preview by remember { mutableStateOf<Bitmap?>(null) }
-    var previewError by remember { mutableStateOf<String?>(null) }
+    var label by remember { mutableStateOf<Bitmap?>(null) }
     var copies by remember { mutableIntStateOf(1) }
     var status by remember { mutableStateOf<String?>(null) }
+    var progress by remember { mutableFloatStateOf(0f) }
     var failed by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
 
     LaunchedEffect(token) {
-        try {
-            preview = Api(prefs.serverUrl).preview(token)
-        } catch (e: ApiException) {
-            previewError = e.message
+        val art = deps.scryfall.art(token.artUrl)
+        label = withContext(Dispatchers.Default) { LabelRenderer.render(token, art) }
+    }
+
+    fun startPrint() {
+        val bitmap = label ?: return
+        busy = true
+        failed = false
+        scope.launch {
+            try {
+                val black = withContext(Dispatchers.Default) { toPrintBits(bitmap) }
+                deps.printer.print(black, bitmap.height, copies) { message, fraction ->
+                    status = message
+                    progress = fraction
+                }
+                deps.prefs.addRecent(token)
+                status = if (copies == 1) "Printed." else "Printed $copies copies."
+            } catch (e: ApiException) {
+                failed = true
+                status = e.message?.let { if (it.startsWith("Print failed")) it else "Print failed: $it" }
+            } catch (e: SecurityException) {
+                failed = true
+                status = "Print failed: Bluetooth permission was refused."
+            } finally {
+                busy = false
+            }
+        }
+    }
+
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted.values.all { it }) {
+            startPrint()
+        } else {
+            failed = true
+            status = "Print failed: Token Printer needs Bluetooth permission to reach the printer."
         }
     }
 
@@ -278,14 +329,14 @@ private fun DetailScreen(prefs: Prefs, token: Token) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            Modifier.fillMaxWidth(0.75f).aspectRatio(577f / 927f).border(1.dp, MaterialTheme.colorScheme.outline),
+            Modifier.fillMaxWidth(0.75f).aspectRatio(LabelRenderer.WIDTH.toFloat() / LabelRenderer.HEIGHT).border(1.dp, MaterialTheme.colorScheme.outline),
             contentAlignment = Alignment.Center,
         ) {
-            val bitmap = preview
-            when {
-                bitmap != null -> Image(bitmap.asImageBitmap(), contentDescription = "Label preview", modifier = Modifier.fillMaxSize())
-                previewError != null -> Text(previewError!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
-                else -> CircularProgressIndicator()
+            val bitmap = label
+            if (bitmap != null) {
+                Image(bitmap.asImageBitmap(), contentDescription = "Label preview", modifier = Modifier.fillMaxSize())
+            } else {
+                CircularProgressIndicator()
             }
         }
 
@@ -297,26 +348,16 @@ private fun DetailScreen(prefs: Prefs, token: Token) {
 
         Button(
             onClick = {
-                busy = true
-                failed = false
-                status = "Sending to the printer…"
-                scope.launch {
-                    val api = Api(prefs.serverUrl)
-                    try {
-                        val job = api.print(token, copies)
-                        prefs.addRecent(token)
-                        status = waitForJob(api, job) { status = it }
-                    } catch (e: ApiException) {
-                        status = e.message?.let { if (it.startsWith("Print failed")) it else "Print failed: $it" }
-                    }
-                    failed = status?.startsWith("Print failed") == true
-                    busy = false
+                val missing = bluetoothPermissions.filter {
+                    ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
                 }
+                if (missing.isEmpty()) startPrint() else askPermission.launch(missing.toTypedArray())
             },
-            enabled = !busy && previewError == null,
+            enabled = !busy && label != null,
             modifier = Modifier.fillMaxWidth().height(56.dp),
         ) { Text(if (busy) "Printing…" else "Print") }
 
+        if (busy) LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
         status?.let {
             Text(
                 it,
@@ -327,55 +368,31 @@ private fun DetailScreen(prefs: Prefs, token: Token) {
     }
 }
 
-/** Polls the job until it finishes; returns the message to show. */
-private suspend fun waitForJob(api: Api, job: String, progress: (String) -> Unit): String {
-    repeat(90) {
-        val s = api.status(job)
-        when (s.state) {
-            JobState.DONE -> return "Printed."
-            JobState.FAILED -> return "Print failed: ${s.error ?: "unknown reason"}"
-            JobState.QUEUED -> progress("Waiting for the printer…")
-            JobState.PRINTING -> progress("Printing…")
-        }
-        delay(1_000)
-    }
-    return "Print failed: the printer didn't answer in time."
+/** The label as print dots: black = true, placed on the printer's 640-wide bitmap. */
+private fun toPrintBits(label: Bitmap): BooleanArray {
+    val w = label.width
+    val h = label.height
+    val pixels = IntArray(w * h)
+    label.getPixels(pixels, 0, w, 0, 0, w, h)
+    val black = BooleanArray(pixels.size) { Dither.luma(pixels[it]) < 128 }
+    return Niimbot.onPrintCanvas(black, w, h)
 }
 
 @Composable
-private fun SettingsScreen(prefs: Prefs, done: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    var url by remember { mutableStateOf(prefs.serverUrl.ifEmpty { "http://" }) }
-    var result by remember { mutableStateOf<String?>(null) }
-    var ok by remember { mutableStateOf(false) }
+private fun PrinterScreen(prefs: Prefs) {
     val context = LocalContext.current
+    var address by remember { mutableStateOf(prefs.printerAddress) }
 
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Enter the Kitchen Hub label server's address, including the port, for example http://192.168.1.50:9300")
-        OutlinedTextField(
-            value = url,
-            onValueChange = { url = it; result = null },
-            label = { Text("Pi address") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-            modifier = Modifier.fillMaxWidth(),
+        Text("Token Printer prints straight to the NIIMBOT B1 over Bluetooth. Load the 50×80 mm labels and turn the printer on.")
+        Text(
+            "The printer takes one connection at a time, so it has to be free: not connected to the Kitchen Hub or the NIIMBOT app.",
+            style = MaterialTheme.typography.bodySmall,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = {
-                result = "Checking…"
-                scope.launch {
-                    try {
-                        result = Api(url).health()
-                        ok = true
-                    } catch (e: ApiException) {
-                        result = e.message
-                        ok = false
-                    }
-                }
-            }) { Text("Test") }
-            Button(onClick = { prefs.serverUrl = url; done() }, enabled = url.length > "http://".length) { Text("Save") }
+        Text(if (address != null) "Remembered printer: $address" else "No printer remembered yet. The first print finds it.")
+        if (address != null) {
+            OutlinedButton(onClick = { prefs.printerAddress = null; address = null }) { Text("Forget this printer") }
         }
-        result?.let { Text(it, color = if (ok || it == "Checking…") MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error) }
         Spacer(Modifier.size(8.dp))
         Text(
             "Token data and art come from Scryfall. Token Printer ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
