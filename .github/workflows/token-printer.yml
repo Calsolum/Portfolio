@@ -1,0 +1,73 @@
+name: Token Printer
+
+on:
+  push:
+    paths:
+      - "mtg-token-printer/**"
+      - ".github/workflows/token-printer.yml"
+  pull_request:
+    paths:
+      - "mtg-token-printer/**"
+      - ".github/workflows/token-printer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pi:
+    name: Pi token routes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mtg-token-printer/pi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: sudo apt-get install -y fonts-dejavu-core
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest -q
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mtg-token-printer/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew --no-daemon assembleDebug
+      - run: mv app/build/outputs/apk/debug/app-debug.apk token-printer.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: token-printer-apk
+          path: mtg-token-printer/android/token-printer.apk
+
+  release:
+    # Every change merged into the site branch refreshes one download link.
+    name: Publish APK
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/portfolio'
+    needs: [pi, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: token-printer-apk
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view token-printer >/dev/null 2>&1 || \
+            gh release create token-printer --target "$GITHUB_SHA" \
+              --title "Token Printer (latest)" \
+              --notes "Latest Android build of the MTG token printer. Install token-printer.apk on the phone."
+          gh release upload token-printer token-printer.apk --clobber
