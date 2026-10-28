@@ -43,7 +43,7 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew --no-daemon assembleDebug
+      - run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
       - run: mv app/build/outputs/apk/debug/app-debug.apk token-printer.apk
       - uses: actions/upload-artifact@v4
         with:
