@@ -116,7 +116,7 @@ export const sections: Section[] = [
     title: "Technical",
     titleLine2: "Projects",
     intro:
-      "Seven projects built with Claude as the coding partner: Tariq writes the brief, makes the design calls and tests on real devices, and Claude writes the code. A self-hosted smart home system, a digital party game, a board game companion app, a Raspberry Pi game assistant, a team planner for Fate/Grand Order, a finder for weekday food deals, and add-ons for a car dashcam.",
+      "Eight projects built with Claude as the coding partner: Tariq writes the brief, makes the design calls and tests on real devices, and Claude writes the code. A self-hosted smart home system, a digital party game, a board game companion app, a Raspberry Pi game assistant, a team planner for Fate/Grand Order, a finder for weekday food deals, add-ons for a car dashcam, and a base tracker for the Smash Up card game.",
   },
 ];
 
@@ -329,6 +329,18 @@ export const projects: Project[] = [
     // Runs in a car and on a home network, and the scripts aren't published, so there is nothing to link to.
     readable: true,
   },
+  {
+    slug: "smash-up-tracker",
+    title: "Smash Up Base Tracker",
+    category: "projects",
+    kind: "Web App · Card Game Companion",
+    blurb:
+      "A table-side tracker for the Smash Up card game. Tap in each player's power on every base and it flags the moment one breaks, scores it by the rulebook, ties included, and keeps the race to 15. Every base and faction from every set is built in. Pass one phone around, or share the game by QR code so every phone at the table shows the same board.",
+    stack: "Next.js · TypeScript · Upstash Redis",
+    tags: ["TypeScript", "Real-time", "Board Games"],
+    app: "/smash-up",
+    readable: true,
+  },
 ];
 
 export const stats = [
@@ -338,7 +350,7 @@ export const stats = [
   { value: "1", label: "Novella" },
   { value: "1", label: "Stage Adaptation" },
   { value: "1", label: "Film Script" },
-  { value: "7", label: "Projects" },
+  { value: "8", label: "Projects" },
 ];
 
 export interface ExperienceEntry {
