@@ -5,20 +5,14 @@ import { devlog, devlogIntro } from "@/data/devlog";
 import { profile } from "@/data/site";
 import { groupDevLog } from "@/lib/devlog";
 
-import { CardsLayout, LedgerLayout, TimelineLayout } from "./layouts";
+import { DevLogLedger } from "./DevLogLedger";
 
 export const metadata: Metadata = {
   title: "Dev Log",
   description: devlogIntro,
 };
 
-// Layout preview while the design is being chosen: /devlog?layout=cards or ?layout=ledger.
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const { layout } = await searchParams;
+export default function Page() {
   const months = groupDevLog(devlog);
 
   return (
@@ -47,13 +41,7 @@ export default async function Page({
           .
         </p>
 
-        {layout === "cards" ? (
-          <CardsLayout months={months} />
-        ) : layout === "ledger" ? (
-          <LedgerLayout months={months} />
-        ) : (
-          <TimelineLayout months={months} />
-        )}
+        <DevLogLedger months={months} />
       </Container>
     </div>
   );
