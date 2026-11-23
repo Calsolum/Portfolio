@@ -36,6 +36,30 @@ export const devlogIntro =
 
 export const devlog: DevLogEntry[] = [
   {
+    date: "2026-11-20",
+    project: "Ethics Engine",
+    tag: "Code",
+    summary: "Started a post-jam version and prototyped a new progression system.",
+  },
+  {
+    date: "2026-11-15",
+    project: "Ethics Engine",
+    tag: "Code",
+    summary: "Submitted the game to the Epic AI MegaJam.",
+  },
+  {
+    date: "2026-11-13",
+    project: "Ethics Engine",
+    tag: "Writing",
+    summary: "Wrote the story and dialogue for the jam build.",
+  },
+  {
+    date: "2026-11-12",
+    project: "Ethics Engine",
+    tag: "Code",
+    summary: "Started a new game in Unreal Engine for the Epic AI MegaJam.",
+  },
+  {
     date: "2026-11-02",
     project: "Kitchen Hub",
     href: "/projects/kitchen-hub",
