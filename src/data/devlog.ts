@@ -40,12 +40,20 @@ export const devlog: DevLogEntry[] = [
     project: "Ethics Engine",
     tag: "Design",
     summary: "Started a second version of the prototype with a new upgrade system.",
+    more: {
+      label: "Read about version 2",
+      href: "https://calsolum.wordpress.com/2026/11/23/ethics-engine-devlog-2-version-2-begins-chips-and-device-upgrades/",
+    },
   },
   {
     date: "2026-11-15",
     project: "Ethics Engine",
     tag: "Code",
     summary: "Submitted the prototype to the Epic AI MegaJam, then kept polishing after the deadline.",
+    more: {
+      label: "Read the jam recap",
+      href: "https://calsolum.wordpress.com/2026/11/23/ethics-engine-devlog-1-making-ethics-engine-in-four-days/",
+    },
   },
   {
     date: "2026-11-14",
