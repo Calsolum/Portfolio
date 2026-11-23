@@ -36,6 +36,36 @@ export const devlogIntro =
 
 export const devlog: DevLogEntry[] = [
   {
+    date: "2026-11-20",
+    project: "Ethics Engine",
+    tag: "Design",
+    summary: "Started a second version of the prototype with a new upgrade system.",
+  },
+  {
+    date: "2026-11-15",
+    project: "Ethics Engine",
+    tag: "Code",
+    summary: "Submitted the prototype to the Epic AI MegaJam, then kept polishing after the deadline.",
+  },
+  {
+    date: "2026-11-14",
+    project: "Ethics Engine",
+    tag: "Design",
+    summary: "Playtested, reworked the city layout and brought in character art and music.",
+  },
+  {
+    date: "2026-11-12",
+    project: "Ethics Engine",
+    tag: "Code",
+    summary: "Jam weekend: built a playable game prototype in Unreal Engine in four days, with Claude as the coding partner.",
+  },
+  {
+    date: "2026-10-31",
+    project: "Ethics Engine",
+    tag: "Writing",
+    summary: "Wrote the story, characters and world for a new game.",
+  },
+  {
     date: "2026-11-02",
     project: "Kitchen Hub",
     href: "/projects/kitchen-hub",
