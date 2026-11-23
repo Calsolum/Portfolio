@@ -36,6 +36,44 @@ export const devlogIntro =
 
 export const devlog: DevLogEntry[] = [
   {
+    date: "2026-11-20",
+    project: "Ethics Engine",
+    tag: "Design",
+    summary: "Started a second version of the prototype with a new upgrade system.",
+    more: {
+      label: "Read about version 2",
+      href: "https://calsolum.wordpress.com/2026/11/23/ethics-engine-devlog-2-version-2-begins-chips-and-device-upgrades/",
+    },
+  },
+  {
+    date: "2026-11-15",
+    project: "Ethics Engine",
+    tag: "Code",
+    summary: "Submitted the prototype to the Epic AI MegaJam, then kept polishing after the deadline.",
+    more: {
+      label: "Read the jam recap",
+      href: "https://calsolum.wordpress.com/2026/11/23/ethics-engine-devlog-1-making-ethics-engine-in-four-days/",
+    },
+  },
+  {
+    date: "2026-11-14",
+    project: "Ethics Engine",
+    tag: "Design",
+    summary: "Playtested, reworked the city layout and brought in character art and music.",
+  },
+  {
+    date: "2026-11-12",
+    project: "Ethics Engine",
+    tag: "Code",
+    summary: "Jam weekend: built a playable game prototype in Unreal Engine in four days, with Claude as the coding partner.",
+  },
+  {
+    date: "2026-10-31",
+    project: "Ethics Engine",
+    tag: "Writing",
+    summary: "Wrote the story, characters and world for a new game.",
+  },
+  {
     date: "2026-11-02",
     project: "Kitchen Hub",
     href: "/projects/kitchen-hub",
