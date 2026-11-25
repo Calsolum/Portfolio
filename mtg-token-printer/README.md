@@ -7,6 +7,9 @@ big power/toughness box and the artist credit. You can also type in your own tok
 The **Balloon** tab makes copies for The Jolly Balloon Man: search any creature, and the
 label is that card as the token the ability creates, a 1/1 red Balloon (added to its
 creature types) with flying and haste, plus a reminder to sacrifice it at the next end step.
+The **Brenard** tab does the same for Brenard, Ginger Sculptor: the copy is a 1/1 Food Golem
+artifact creature with "{2}, {T}, Sacrifice this token: You gain 3 life.", and a reminder that
+it gets +2/+2 and trample while you control Brenard.
 
 This isn't part of the website. It lives here so the code sits with the rest of my projects.
 

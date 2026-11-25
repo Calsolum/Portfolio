@@ -26,9 +26,9 @@ class Scryfall(private val cacheDir: File) {
 
     suspend fun search(query: String): List<Token> = find("is:token ($query)", "unique=art&order=released&dir=desc")
 
-    /** Creature cards, one printing each, most-played first: what Balloon copies start from. */
+    /** Creature cards, one printing each, most-played first: what token copies start from. */
     suspend fun searchCreatures(query: String): List<Token> =
-        find("${Balloon.TARGETS} -is:digital ($query)", "unique=cards&order=edhrec")
+        find("${CopyRule.TARGETS} -is:digital ($query)", "unique=cards&order=edhrec")
 
     private suspend fun find(query: String, options: String): List<Token> = withContext(Dispatchers.IO) {
         val q = URLEncoder.encode(query, "UTF-8")

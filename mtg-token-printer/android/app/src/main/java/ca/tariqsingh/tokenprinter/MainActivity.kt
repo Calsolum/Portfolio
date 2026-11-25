@@ -44,9 +44,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.darkColorScheme
@@ -158,14 +158,16 @@ private fun App(deps: Deps) {
 private fun HomeScreen(deps: Deps, open: (Token) -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     Column {
-        TabRow(selectedTabIndex = tab) {
+        ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Search") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Balloon") })
-            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Make your own") })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Brenard") })
+            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Make your own") })
         }
         when (tab) {
             0 -> SearchTab(deps, open)
-            1 -> BalloonTab(deps, open)
+            1 -> CopyTab(deps, CopyRule.BALLOON, "The Jolly Balloon Man copies it as a 1/1 red Balloon with flying and haste.", open)
+            2 -> CopyTab(deps, CopyRule.BRENARD, "Brenard, Ginger Sculptor copies it as a 1/1 Food Golem artifact that sacrifices for 3 life.", open)
             else -> CustomTab(open)
         }
     }
@@ -180,18 +182,15 @@ private fun SearchTab(deps: Deps, open: (Token) -> Unit) = CardSearch(
     open = open,
 )
 
-/**
- * Copies for The Jolly Balloon Man: pick any creature and the label is that
- * card as a 1/1 red Balloon with flying and haste.
- */
+/** Pick any creature and the label is the token copy `rule` makes of it. */
 @Composable
-private fun BalloonTab(deps: Deps, open: (Token) -> Unit) = CardSearch(
+private fun CopyTab(deps: Deps, rule: CopyRule, hint: String, open: (Token) -> Unit) = CardSearch(
     label = "Search creatures to copy (e.g. Llanowar Elves)",
     noun = "creatures",
     search = deps.scryfall::searchCreatures,
     recent = emptyList(),
-    hint = "The Jolly Balloon Man copies it as a 1/1 red Balloon with flying and haste.",
-    open = { open(Balloon.copy(it)) },
+    hint = hint,
+    open = { open(rule.copy(it)) },
 )
 
 @Composable
