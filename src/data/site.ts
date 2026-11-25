@@ -74,6 +74,7 @@ export const navLinks = [
   { href: "/fiction", label: "Fiction" },
   { href: "/scripts", label: "Scripts" },
   { href: "/projects", label: "Projects" },
+  { href: "/devlog", label: "Dev Log" },
   { href: "/about", label: "About" },
 ] as const;
 
@@ -374,7 +375,7 @@ export const experience: ExperienceEntry[] = [
   {
     role: "Senior Content Editor",
     org: "Mobile Gaming News Network",
-    period: "Jul 2019 – Aug 2020",
+    period: "Jul 2019 – Dec 2020",
     bullets: [
       "Proofread, edited and suggested changes to articles before final publication.",
       "Scheduled and published approved web articles.",
