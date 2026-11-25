@@ -160,9 +160,14 @@ private fun HomeScreen(deps: Deps, open: (Token) -> Unit) {
     Column {
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Search") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Make your own") })
+            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Balloon") })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Make your own") })
         }
-        if (tab == 0) SearchTab(deps, open) else CustomTab(open)
+        when (tab) {
+            0 -> SearchTab(deps, open)
+            1 -> BalloonTab(deps, open)
+            else -> CustomTab(open)
+        }
     }
 }
 
@@ -210,6 +215,60 @@ private fun SearchTab(deps: Deps, open: (Token) -> Unit) {
         }
         LazyColumn {
             items(list, key = { (it.id ?: "custom") + it.name + it.typeLine }) { token ->
+                TokenRow(token) { open(token) }
+                HorizontalDivider()
+            }
+        }
+    }
+}
+
+/**
+ * Copies made by The Jolly Balloon Man: search any creature and print it as a
+ * 1/1 Balloon with flying and haste that's sacrificed at the next end step.
+ */
+@Composable
+private fun BalloonTab(deps: Deps, open: (Token) -> Unit) {
+    var query by remember { mutableStateOf("") }
+    var results by remember { mutableStateOf<List<Token>>(emptyList()) }
+    var loading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(query) {
+        error = null
+        if (query.trim().length < 2) {
+            results = emptyList()
+            return@LaunchedEffect
+        }
+        delay(400)
+        loading = true
+        try {
+            results = deps.scryfall.searchBalloonTargets(query.trim())
+            if (results.isEmpty()) error = "No creatures match \"${query.trim()}\"."
+        } catch (e: ApiException) {
+            error = e.message
+        } finally {
+            loading = false
+        }
+    }
+
+    Column(Modifier.padding(horizontal = 16.dp)) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Creature to copy (e.g. llanowar elves)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        )
+        Text(
+            "Prints The Jolly Balloon Man's copy: the creature's name, art and abilities, as a 1/1 red Balloon with flying and haste, sacrificed at the next end step.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        if (loading) CircularProgressIndicator(Modifier.padding(16.dp).align(Alignment.CenterHorizontally))
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 12.dp)) }
+        LazyColumn {
+            items(results, key = { (it.id ?: "custom") + it.name }) { token ->
                 TokenRow(token) { open(token) }
                 HorizontalDivider()
             }

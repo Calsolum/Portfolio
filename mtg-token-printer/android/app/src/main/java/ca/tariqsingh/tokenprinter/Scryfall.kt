@@ -37,6 +37,23 @@ class Scryfall(private val cacheDir: File) {
         }
     }
 
+    /**
+     * Creature cards (not tokens) matching `query`, turned into the Balloon copy
+     * The Jolly Balloon Man would make of each one.
+     */
+    suspend fun searchBalloonTargets(query: String): List<Token> = withContext(Dispatchers.IO) {
+        val q = URLEncoder.encode("t:creature -is:token game:paper ($query)", "UTF-8")
+        val (code, body) = get("$API/cards/search?q=$q&unique=cards&order=name")
+        when (code) {
+            200 -> {
+                val data = JSONObject(body.decodeToString()).getJSONArray("data")
+                List(minOf(data.length(), 40)) { Balloon.copyOf(data.getJSONObject(it)) }
+            }
+            404 -> emptyList()
+            else -> throw ApiException("Scryfall search failed ($code).")
+        }
+    }
+
     /** The token's art crop, or null when it has none or the download fails. */
     suspend fun art(url: String?): Bitmap? = withContext(Dispatchers.IO) {
         if (url == null) return@withContext null
