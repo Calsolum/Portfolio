@@ -160,19 +160,53 @@ private fun HomeScreen(deps: Deps, open: (Token) -> Unit) {
     Column {
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Search") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Make your own") })
+            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Balloon") })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Make your own") })
         }
-        if (tab == 0) SearchTab(deps, open) else CustomTab(open)
+        when (tab) {
+            0 -> SearchTab(deps, open)
+            1 -> BalloonTab(deps, open)
+            else -> CustomTab(open)
+        }
     }
 }
 
 @Composable
-private fun SearchTab(deps: Deps, open: (Token) -> Unit) {
+private fun SearchTab(deps: Deps, open: (Token) -> Unit) = CardSearch(
+    label = "Search tokens (e.g. goblin, treasure, 1/1 soldier)",
+    noun = "tokens",
+    search = deps.scryfall::search,
+    recent = remember { deps.prefs.recent() },
+    open = open,
+)
+
+/**
+ * Copies for The Jolly Balloon Man: pick any creature and the label is that
+ * card as a 1/1 red Balloon with flying and haste.
+ */
+@Composable
+private fun BalloonTab(deps: Deps, open: (Token) -> Unit) = CardSearch(
+    label = "Search creatures to copy (e.g. Llanowar Elves)",
+    noun = "creatures",
+    search = deps.scryfall::searchCreatures,
+    recent = emptyList(),
+    hint = "The Jolly Balloon Man copies it as a 1/1 red Balloon with flying and haste.",
+    open = { open(Balloon.copy(it)) },
+)
+
+@Composable
+private fun CardSearch(
+    label: String,
+    noun: String,
+    search: suspend (String) -> List<Token>,
+    recent: List<Token>,
+    open: (Token) -> Unit,
+    hint: String? = null,
+) {
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<Token>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    val recent = remember { deps.prefs.recent() }
 
     LaunchedEffect(query) {
         error = null
@@ -183,8 +217,8 @@ private fun SearchTab(deps: Deps, open: (Token) -> Unit) {
         delay(400) // wait for typing to pause; a new keystroke cancels this
         loading = true
         try {
-            results = deps.scryfall.search(query.trim())
-            if (results.isEmpty()) error = "No tokens match \"${query.trim()}\"."
+            results = search(query.trim())
+            if (results.isEmpty()) error = "No $noun match \"${query.trim()}\"."
         } catch (e: ApiException) {
             error = e.message
         } finally {
@@ -196,10 +230,13 @@ private fun SearchTab(deps: Deps, open: (Token) -> Unit) {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text("Search tokens (e.g. goblin, treasure, 1/1 soldier)") },
+            label = { Text(label) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
         )
+        if (hint != null && query.trim().length < 2) {
+            Text(hint, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 12.dp))
+        }
         if (loading) CircularProgressIndicator(Modifier.padding(16.dp).align(Alignment.CenterHorizontally))
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 12.dp)) }
 

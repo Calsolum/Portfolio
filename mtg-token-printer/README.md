@@ -4,6 +4,10 @@ Print Magic: The Gathering tokens on a Bluetooth label printer from an Android p
 Each token prints on one 50×80 mm label: name, dithered art, type line, rules text, a
 big power/toughness box and the artist credit. You can also type in your own token.
 
+The **Balloon** tab makes copies for The Jolly Balloon Man: search any creature, and the
+label is that card as the token the ability creates, a 1/1 red Balloon (added to its
+creature types) with flying and haste, plus a reminder to sacrifice it at the next end step.
+
 This isn't part of the website. It lives here so the code sits with the rest of my projects.
 
 ```

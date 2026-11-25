@@ -24,9 +24,15 @@ class Scryfall(private val cacheDir: File) {
     private val gate = Mutex()
     private var last = 0L
 
-    suspend fun search(query: String): List<Token> = withContext(Dispatchers.IO) {
-        val q = URLEncoder.encode("is:token ($query)", "UTF-8")
-        val (code, body) = get("$API/cards/search?q=$q&unique=art&order=released&dir=desc")
+    suspend fun search(query: String): List<Token> = find("is:token ($query)", "unique=art&order=released&dir=desc")
+
+    /** Creature cards, one printing each, most-played first: what Balloon copies start from. */
+    suspend fun searchCreatures(query: String): List<Token> =
+        find("${Balloon.TARGETS} -is:digital ($query)", "unique=cards&order=edhrec")
+
+    private suspend fun find(query: String, options: String): List<Token> = withContext(Dispatchers.IO) {
+        val q = URLEncoder.encode(query, "UTF-8")
+        val (code, body) = get("$API/cards/search?q=$q&$options")
         when (code) {
             200 -> {
                 val data = JSONObject(body.decodeToString()).getJSONArray("data")
