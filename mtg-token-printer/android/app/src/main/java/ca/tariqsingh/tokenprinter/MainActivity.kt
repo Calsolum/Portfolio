@@ -5,6 +5,9 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.net.Uri
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -46,6 +49,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -81,8 +85,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val prefs = Prefs(this)
-        val deps = Deps(prefs, Scryfall(cacheDir), B1Printer(applicationContext, prefs))
+        val deps = Deps.get(this)
+        // The bubble's service stops with the app process; bring it back if it was left on.
+        if (deps.prefs.bubbleEnabled && BubbleService.canRun(this)) BubbleService.start(this)
         setContent {
             MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
                 Surface(Modifier.fillMaxSize()) { App(deps) }
@@ -90,8 +95,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
-private class Deps(val prefs: Prefs, val scryfall: Scryfall, val printer: B1Printer)
 
 /** Bluetooth permissions this Android version needs before scanning and connecting. */
 private val bluetoothPermissions: Array<String> =
@@ -120,7 +123,7 @@ private fun App(deps: Deps) {
                     Text(
                         when (val s = screen) {
                             Screen.Home -> "Token Printer"
-                            Screen.Settings -> "Printer"
+                            Screen.Settings -> "Printer & voice"
                             is Screen.Detail -> s.token.name
                         },
                         maxLines = 1,
@@ -413,22 +416,12 @@ private fun DetailScreen(deps: Deps, token: Token) {
     }
 }
 
-/** The label as print dots: black = true, placed on the printer's 640-wide bitmap. */
-private fun toPrintBits(label: Bitmap): BooleanArray {
-    val w = label.width
-    val h = label.height
-    val pixels = IntArray(w * h)
-    label.getPixels(pixels, 0, w, 0, 0, w, h)
-    val black = BooleanArray(pixels.size) { Dither.luma(pixels[it]) < 128 }
-    return Niimbot.onPrintCanvas(black, w, h)
-}
-
 @Composable
 private fun PrinterScreen(prefs: Prefs) {
     val context = LocalContext.current
     var address by remember { mutableStateOf(prefs.printerAddress) }
 
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Token Printer prints straight to the NIIMBOT B1 over Bluetooth. Load the 50×80 mm labels and turn the printer on.")
         Text(
             "The printer takes one connection at a time, so it has to be free: not connected to the Kitchen Hub or the NIIMBOT app.",
@@ -438,6 +431,9 @@ private fun PrinterScreen(prefs: Prefs) {
         if (address != null) {
             OutlinedButton(onClick = { prefs.printerAddress = null; address = null }) { Text("Forget this printer") }
         }
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        BubbleSettings(prefs)
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Spacer(Modifier.size(8.dp))
         Text(
             "Token data and art come from Scryfall. Token Printer ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
@@ -445,4 +441,75 @@ private fun PrinterScreen(prefs: Prefs) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/**
+ * Turns the voice bubble on or off. Turning it on walks through what it needs:
+ * "Display over other apps", the microphone, Bluetooth, and (optionally) the
+ * notification that keeps it running.
+ */
+@Composable
+private fun BubbleSettings(prefs: Prefs) {
+    val context = LocalContext.current
+    var on by remember { mutableStateOf(prefs.bubbleEnabled && BubbleService.canRun(context)) }
+    var note by remember { mutableStateOf<String?>(null) }
+
+    fun turnOn() {
+        prefs.bubbleEnabled = true
+        BubbleService.start(context)
+        on = true
+        note = null
+    }
+
+    val askPermissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        val required = listOf(Manifest.permission.RECORD_AUDIO) + bluetoothPermissions
+        if (required.all { p -> ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED }) {
+            turnOn()
+        } else {
+            note = "The bubble needs the microphone to hear you and Bluetooth to reach the printer."
+        }
+    }
+
+    fun askRuntimePermissions() {
+        val wanted = listOf(Manifest.permission.RECORD_AUDIO) + bluetoothPermissions +
+            if (Build.VERSION.SDK_INT >= 33) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()
+        val missing = wanted.filter { ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED }
+        if (missing.isEmpty()) turnOn() else askPermissions.launch(missing.toTypedArray())
+    }
+
+    val askOverlay = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (Settings.canDrawOverlays(context)) {
+            askRuntimePermissions()
+        } else {
+            note = "Turn on \"Allow display over other apps\" for Token Printer to use the bubble."
+        }
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("Voice bubble", fontWeight = FontWeight.SemiBold)
+            Text(
+                "A mic button that floats over other apps, like LifeTap. Tap it and say a token: " +
+                    "\"two goblins\", \"treasure\", \"balloon llanowar elves\" or \"brenard grizzly bears\". " +
+                    "It shows the match with a Print button.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        Switch(
+            checked = on,
+            onCheckedChange = { wanted ->
+                if (!wanted) {
+                    prefs.bubbleEnabled = false
+                    BubbleService.stop(context)
+                    on = false
+                } else if (!Settings.canDrawOverlays(context)) {
+                    askOverlay.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}")))
+                } else {
+                    askRuntimePermissions()
+                }
+            },
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+    note?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
 }
