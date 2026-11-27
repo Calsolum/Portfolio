@@ -11,6 +11,13 @@ The **Brenard** tab does the same for Brenard, Ginger Sculptor: the copy is a 1/
 artifact creature with "{2}, {T}, Sacrifice this token: You gain 3 life.", and a reminder that
 it gets +2/+2 and trample while you control Brenard.
 
+The **voice bubble** (Settings → Voice bubble) is a mic button that floats over other apps,
+so it sits on top of LifeTap during a game. Tap it and say a token: "two goblins", "treasure",
+"balloon llanowar elves" or "brenard grizzly bears". It uses the phone's own speech
+recognition, finds the best match on Scryfall, and shows a small card with the label and a
+**Print** button (Next shows the other matches, and the one you print becomes the first match
+for that phrase next time). Printing runs in the background, so you never leave LifeTap.
+
 This isn't part of the website. It lives here so the code sits with the rest of my projects.
 
 ```
